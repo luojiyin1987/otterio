@@ -58,9 +58,10 @@ require (
 	github.com/tidwall/gjson v1.19.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/tinylib/msgp v1.6.4
+	github.com/valyala/fasthttp v1.71.0
 	github.com/valyala/tcplisten v1.0.0
-	go.etcd.io/etcd/api/v3 v3.6.11
-	go.etcd.io/etcd/client/v3 v3.6.11
+	go.etcd.io/etcd/api/v3 v3.6.12
+	go.etcd.io/etcd/client/v3 v3.6.12
 	go.uber.org/zap v1.28.0
 	golang.org/x/crypto v0.52.0
 	golang.org/x/net v0.55.0
@@ -83,8 +84,8 @@ require (
 	github.com/go-asn1-ber/asn1-ber v1.5.8-0.20250403174932-29230038a667 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
-	github.com/gofiber/schema v1.7.1 // indirect
-	github.com/gofiber/utils/v2 v2.0.6 // indirect
+	github.com/gofiber/schema v1.7.2 // indirect
+	github.com/gofiber/utils/v2 v2.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
@@ -109,7 +110,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/prometheus/common v0.68.0 // indirect
+	github.com/prometheus/common v0.68.1 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/shoenig/go-m1cpu v0.2.1 // indirect
@@ -118,10 +119,9 @@ require (
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
 	github.com/tklauser/numcpus v0.12.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.71.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.6.11 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.6.12 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
