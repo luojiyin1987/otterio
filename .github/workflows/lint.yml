@@ -40,9 +40,12 @@ jobs:
           cache: true
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          # golangci-lint must be built with a Go version >= the one declared
+          # in go.mod (currently 1.26). Support for Go 1.26 landed in v2.9.0,
+          # so we pin to a recent v2.x release that has it.
+          version: v2.12
           args: --config ./.golangci.yml --timeout 10m --build-tags kqueue
           # Only annotate new issues on PRs to keep the noise low while we
           # incrementally clean up legacy findings.

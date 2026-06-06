@@ -28,7 +28,11 @@ linters:
     generated: lax
     rules:
       - text: should have a package comment
+        linters:
+          - revive
       - text: error strings should not be capitalized or end with punctuation or a newline
+        linters:
+          - staticcheck
     paths:
       - pkg/rpc
       - pkg/argon2
