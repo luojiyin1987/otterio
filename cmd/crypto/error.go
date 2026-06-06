@@ -81,6 +81,16 @@ var (
 
 	errInvalidInternalIV            = Errorf("The internal encryption IV is malformed")
 	errInvalidInternalSealAlgorithm = Errorf("The internal seal algorithm is invalid and not supported")
+
+	// errKMSContextBindingConflict indicates that the persisted client KMS
+	// context attempts to override a server-bound reserved key (currently the
+	// bucket binding key). This is treated as evidence that the object
+	// metadata was tampered with and the object MUST NOT be unsealed.
+	//
+	// SECURITY: Returning a typed error here lets the upper layers reply with
+	// a generic crypto/integrity failure without leaking which key the
+	// attacker tried to override.
+	errKMSContextBindingConflict = Errorf("The persisted KMS context attempts to override a server-bound reserved key")
 )
 
 var (

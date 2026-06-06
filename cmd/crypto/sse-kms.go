@@ -14,6 +14,23 @@
  * limitations under the License.
  */
 
+// SECURITY (SSE-KMS context binding):
+//
+//   - UnsealObjectKey ALWAYS rebuilds the binding context as
+//     {bucket: path.Join(bucket, object)} and merges any persisted
+//     client-supplied KMS context on top, REJECTING any attempt by the
+//     persisted client context to override the bucket-binding reserved
+//     key (returns errKMSContextBindingConflict).
+//   - CreateMetadata persists ONLY the client-supplied KMS context (via
+//     MetaContext); it never persists the server-bound binding context,
+//     because the server reconstructs it deterministically from
+//     (bucket, object) on every Unseal.
+//   - ParseMetadata returns the deserialized client context unchanged;
+//     callers MUST NOT trust the returned ctx as the AEAD AAD without
+//     first running it through the binding-merge in UnsealObjectKey.
+//
+// Upstream backlog row 32 (SSE-KMS context binding) -- see
+// docs/security/upstream-cve-backlog.md.
 package crypto
 
 import (
@@ -85,18 +102,25 @@ func (ssekms) IsEncrypted(metadata map[string]string) bool {
 	return false
 }
 
-// UnsealObjectKey extracts and decrypts the sealed object key
-// from the metadata using KMS and returns the decrypted object
-// key.
+// UnsealObjectKey extracts and decrypts the sealed object key from the
+// metadata using the KMS and returns the decrypted object key.
+//
+// SECURITY: The KMS binding context is always reconstructed by the
+// server from (bucket, object). Any persisted client-supplied KMS
+// context (MetaContext) is merged in as additional AEAD AAD entries,
+// but MAY NOT override the reserved bucket-binding key. Attempting to
+// override that key (e.g. by tampering with the persisted metadata)
+// returns errKMSContextBindingConflict.
 func (s3 ssekms) UnsealObjectKey(kms KMS, metadata map[string]string, bucket, object string) (key ObjectKey, err error) {
-	keyID, kmsKey, sealedKey, ctx, err := s3.ParseMetadata(metadata)
+	keyID, kmsKey, sealedKey, clientCtx, err := s3.ParseMetadata(metadata)
 	if err != nil {
 		return key, err
 	}
-	if _, ok := ctx[bucket]; !ok {
-		ctx[bucket] = path.Join(bucket, object)
+	boundCtx, err := mergeBindingContext(bucket, object, clientCtx)
+	if err != nil {
+		return key, err
 	}
-	unsealKey, err := kms.DecryptKey(keyID, kmsKey, ctx)
+	unsealKey, err := kms.DecryptKey(keyID, kmsKey, boundCtx)
 	if err != nil {
 		return key, err
 	}
@@ -104,11 +128,59 @@ func (s3 ssekms) UnsealObjectKey(kms KMS, metadata map[string]string, bucket, ob
 	return key, err
 }
 
-// CreateMetadata encodes the sealed object key into the metadata and returns
-// the modified metadata. If the keyID and the kmsKey is not empty it encodes
-// both into the metadata as well. It allocates a new metadata map if metadata
-// is nil.
-func (ssekms) CreateMetadata(metadata map[string]string, keyID string, kmsKey []byte, sealedKey SealedKey) map[string]string {
+// ObjectBindingContext returns the canonical SSE-KMS/SSE-S3 binding
+// context for an (bucket, object) pair. It is the single source of
+// truth for the server-bound AEAD AAD used by Generate/Decrypt calls
+// against the KMS for object-level encryption.
+//
+// SECURITY: All cmd-package call sites that ask the KMS to wrap an
+// object-encryption key for a specific (bucket, object) MUST build
+// their context via this helper (or via mergeBindingContext) to keep
+// PUT and GET paths symmetrical and to prevent silent drift between
+// duplicated literal contexts.
+func ObjectBindingContext(bucket, object string) Context {
+	return objectBindingContext(bucket, object)
+}
+
+// objectBindingContext returns the canonical SSE-KMS binding context
+// for an (bucket, object) pair. It is the single source of truth for
+// the server-bound AEAD AAD used by SSE-KMS Generate/Decrypt calls.
+func objectBindingContext(bucket, object string) Context {
+	return Context{bucket: path.Join(bucket, object)}
+}
+
+// mergeBindingContext returns the binding context for (bucket, object)
+// merged with the supplied client-provided KMS context. The bucket key
+// is reserved: if clientCtx contains the reserved bucket key with a
+// value different from the canonical binding value the function
+// returns errKMSContextBindingConflict.
+func mergeBindingContext(bucket, object string, clientCtx Context) (Context, error) {
+	bound := objectBindingContext(bucket, object)
+	for k, v := range clientCtx {
+		if k == bucket {
+			if v != bound[bucket] {
+				return nil, errKMSContextBindingConflict
+			}
+			continue
+		}
+		bound[k] = v
+	}
+	return bound, nil
+}
+
+// CreateMetadata encodes the sealed object key into the metadata and
+// returns the modified metadata. If the keyID and the kmsKey is not
+// empty it encodes both into the metadata as well. When clientCtx is
+// non-empty its JSON serialization is base64-encoded and stored under
+// MetaContext so that future Unseal calls can replay the same AEAD
+// AAD. It allocates a new metadata map if metadata is nil.
+//
+// SECURITY: clientCtx MUST be the raw client-supplied KMS context
+// (e.g. parsed from x-amz-server-side-encryption-context). The caller
+// MUST NOT pre-merge the server-bound binding context here; the
+// binding context is reconstructed deterministically by
+// UnsealObjectKey from (bucket, object) on each read.
+func (ssekms) CreateMetadata(metadata map[string]string, keyID string, kmsKey []byte, sealedKey SealedKey, clientCtx Context) map[string]string {
 	if sealedKey.Algorithm != SealAlgorithm {
 		logger.CriticalIf(context.Background(), Errorf("The seal algorithm '%s' is invalid for SSE-S3", sealedKey.Algorithm))
 	}
@@ -125,7 +197,7 @@ func (ssekms) CreateMetadata(metadata map[string]string, keyID string, kmsKey []
 	}
 
 	if metadata == nil {
-		metadata = make(map[string]string, 5)
+		metadata = make(map[string]string, 6)
 	}
 
 	metadata[MetaAlgorithm] = sealedKey.Algorithm
@@ -135,15 +207,34 @@ func (ssekms) CreateMetadata(metadata map[string]string, keyID string, kmsKey []
 		metadata[MetaKeyID] = keyID
 		metadata[MetaDataEncryptionKey] = base64.StdEncoding.EncodeToString(kmsKey)
 	}
+	if len(clientCtx) > 0 {
+		// Use kms.Context.MarshalText directly so the persisted bytes
+		// are the same canonical JSON object that the rest of the KMS
+		// stack consumes. Going through jsoniter.Marshal would treat
+		// Context as a TextMarshaler and double-encode it as a JSON
+		// string, which then fails to unmarshal back into a Context
+		// in ParseMetadata. The contract returned by MarshalText says
+		// it never errors, but we tolerate the err signature anyway.
+		if buf, err := clientCtx.MarshalText(); err == nil {
+			metadata[MetaContext] = base64.StdEncoding.EncodeToString(buf)
+		}
+	}
 	return metadata
 }
 
-// ParseMetadata extracts all SSE-KMS related values from the object metadata
-// and checks whether they are well-formed. It returns the sealed object key
-// on success. If the metadata contains both, a KMS master key ID and a sealed
-// KMS data key it returns both. If the metadata does not contain neither a
-// KMS master key ID nor a sealed KMS data key it returns an empty keyID and
-// KMS data key. Otherwise, it returns an error.
+// ParseMetadata extracts all SSE-KMS related values from the object
+// metadata and checks whether they are well-formed. It returns the
+// sealed object key on success. If the metadata contains both, a KMS
+// master key ID and a sealed KMS data key it returns both. If the
+// metadata does not contain neither a KMS master key ID nor a sealed
+// KMS data key it returns an empty keyID and KMS data key. Otherwise,
+// it returns an error.
+//
+// SECURITY: The returned ctx is the raw client-supplied KMS context
+// as it was persisted on PUT. Callers MUST NOT use it directly as the
+// AEAD AAD; instead they MUST run it through mergeBindingContext (or
+// rely on UnsealObjectKey, which does so) so that the bucket-binding
+// reserved key cannot be overridden by tampered metadata.
 func (ssekms) ParseMetadata(metadata map[string]string) (keyID string, kmsKey []byte, sealedKey SealedKey, ctx Context, err error) {
 	// Extract all required values from object metadata
 	b64IV, ok := metadata[MetaIV]
@@ -197,7 +288,8 @@ func (ssekms) ParseMetadata(metadata map[string]string) (keyID string, kmsKey []
 			return keyID, kmsKey, sealedKey, ctx, Errorf("The internal KMS context is not base64-encoded")
 		}
 		var json = jsoniter.ConfigCompatibleWithStandardLibrary
-		if err = json.Unmarshal(b, ctx); err != nil {
+		ctx = Context{}
+		if err = json.Unmarshal(b, &ctx); err != nil {
 			return keyID, kmsKey, sealedKey, ctx, Errorf("The internal sealed KMS context is invalid")
 		}
 	}

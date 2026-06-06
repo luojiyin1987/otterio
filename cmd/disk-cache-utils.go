@@ -24,7 +24,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -248,7 +247,7 @@ func decryptCacheObjectETag(info *ObjectInfo) error {
 		if err != nil {
 			return err
 		}
-		extKey, err := globalCacheKMS.DecryptKey(keyID, kmsKey, crypto.Context{info.Bucket: path.Join(info.Bucket, info.Name)})
+		extKey, err := globalCacheKMS.DecryptKey(keyID, kmsKey, crypto.ObjectBindingContext(info.Bucket, info.Name))
 		if err != nil {
 			return err
 		}

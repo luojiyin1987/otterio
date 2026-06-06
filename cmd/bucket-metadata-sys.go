@@ -24,7 +24,6 @@ import (
 	"sync"
 
 	"github.com/minio/minio-go/v7/pkg/tags"
-	"github.com/soulteary/otterio/cmd/crypto"
 	"github.com/soulteary/otterio/cmd/logger"
 	bucketsse "github.com/soulteary/otterio/pkg/bucket/encryption"
 	"github.com/soulteary/otterio/pkg/bucket/lifecycle"
@@ -169,10 +168,7 @@ func (sys *BucketMetadataSys) Update(bucket string, configFile string, configDat
 		}
 		meta.ReplicationConfigXML = configData
 	case bucketTargetsFile:
-		meta.BucketTargetsConfigJSON, meta.BucketTargetsConfigMetaJSON, err = encryptBucketMetadata(meta.Name, configData, crypto.Context{
-			bucket:            meta.Name,
-			bucketTargetsFile: bucketTargetsFile,
-		})
+		meta.BucketTargetsConfigJSON, meta.BucketTargetsConfigMetaJSON, err = encryptBucketMetadata(meta.Name, configData, bucketTargetsCtx(meta.Name))
 		if err != nil {
 			return fmt.Errorf("Error encrypting bucket target metadata %w", err)
 		}

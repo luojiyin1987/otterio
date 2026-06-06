@@ -41,7 +41,6 @@ import (
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/disk"
 	"github.com/soulteary/otterio/pkg/fips"
-	"github.com/soulteary/otterio/pkg/kms"
 )
 
 const (
@@ -674,7 +673,7 @@ func newCacheEncryptMetadata(bucket, object string, metadata map[string]string) 
 	if globalCacheKMS == nil {
 		return nil, errKMSNotConfigured
 	}
-	key, err := globalCacheKMS.GenerateKey("", kms.Context{bucket: pathJoin(bucket, object)})
+	key, err := globalCacheKMS.GenerateKey("", crypto.ObjectBindingContext(bucket, object))
 	if err != nil {
 		return nil, err
 	}

@@ -147,7 +147,7 @@ func rotateKey(oldKey []byte, newKey []byte, bucket, object string, metadata map
 		if err != nil {
 			return err
 		}
-		oldKey, err := GlobalKMS.DecryptKey(keyID, kmsKey, crypto.Context{bucket: path.Join(bucket, object)})
+		oldKey, err := GlobalKMS.DecryptKey(keyID, kmsKey, crypto.ObjectBindingContext(bucket, object))
 		if err != nil {
 			return err
 		}
@@ -156,7 +156,7 @@ func rotateKey(oldKey []byte, newKey []byte, bucket, object string, metadata map
 			return err
 		}
 
-		newKey, err := GlobalKMS.GenerateKey("", crypto.Context{bucket: path.Join(bucket, object)})
+		newKey, err := GlobalKMS.GenerateKey("", crypto.ObjectBindingContext(bucket, object))
 		if err != nil {
 			return err
 		}
@@ -172,7 +172,7 @@ func newEncryptMetadata(key []byte, bucket, object string, metadata map[string]s
 		if GlobalKMS == nil {
 			return crypto.ObjectKey{}, errKMSNotConfigured
 		}
-		key, err := GlobalKMS.GenerateKey("", crypto.Context{bucket: path.Join(bucket, object)})
+		key, err := GlobalKMS.GenerateKey("", crypto.ObjectBindingContext(bucket, object))
 		if err != nil {
 			return crypto.ObjectKey{}, err
 		}

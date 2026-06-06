@@ -392,7 +392,7 @@ func (b *BucketMetadata) migrateTargetConfig(ctx context.Context, objectAPI Obje
 		return nil
 	}
 
-	encBytes, metaBytes, err := encryptBucketMetadata(b.Name, b.BucketTargetsConfigJSON, kms.Context{b.Name: b.Name, bucketTargetsFile: bucketTargetsFile})
+	encBytes, metaBytes, err := encryptBucketMetadata(b.Name, b.BucketTargetsConfigJSON, bucketTargetsCtx(b.Name))
 	if err != nil {
 		return err
 	}
@@ -400,6 +400,24 @@ func (b *BucketMetadata) migrateTargetConfig(ctx context.Context, objectAPI Obje
 	b.BucketTargetsConfigJSON = encBytes
 	b.BucketTargetsConfigMetaJSON = metaBytes
 	return b.Save(ctx, objectAPI)
+}
+
+// bucketTargetsCtx returns the canonical KMS binding context used to
+// wrap the bucket-targets configuration blob for a given bucket. The
+// PUT path (encryptBucketMetadata) and the GET path
+// (decryptBucketMetadata) MUST construct the AEAD AAD via this helper
+// so the two sides cannot drift apart silently.
+//
+// SECURITY: All keys and values of the returned Context are derived
+// from server-controlled state (the bucket name and a fixed file
+// constant). The client cannot influence either, so this binding is
+// not exposed as an attacker-controlled surface. See backlog row 32
+// (bucket-level branch) for the audit trail.
+func bucketTargetsCtx(bucket string) kms.Context {
+	return kms.Context{
+		bucket:            bucket,
+		bucketTargetsFile: bucketTargetsFile,
+	}
 }
 
 // encrypt bucket metadata if kms is configured.

@@ -438,10 +438,7 @@ func parseBucketTargetConfig(bucket string, cdata, cmetadata []byte) (*madmin.Bu
 			return nil, err
 		}
 		if crypto.S3.IsEncrypted(meta) {
-			if data, err = decryptBucketMetadata(cdata, bucket, meta, crypto.Context{
-				bucket:            bucket,
-				bucketTargetsFile: bucketTargetsFile,
-			}); err != nil {
+			if data, err = decryptBucketMetadata(cdata, bucket, meta, bucketTargetsCtx(bucket)); err != nil {
 				return nil, err
 			}
 		}
