@@ -98,6 +98,20 @@ func (b *bootstrapRESTServer) HealthHandler(w http.ResponseWriter, r *http.Reque
 
 func (b *bootstrapRESTServer) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "VerifyHandler")
+	// SECURITY (CVE-2023-28432): the bootstrap verify endpoint replies with
+	// the cluster topology (OtterioPlatform / OtterioRuntime / OtterioEndpoints).
+	// Authenticate the caller against the inter-node JWT (the same validator
+	// peer-rest / storage-rest / lock-rest already use) so an unauthenticated
+	// probe of /otterio/bootstrap/v1/verify cannot enumerate the cluster.
+	// HealthHandler intentionally stays anonymous: it returns no body and
+	// exists for external liveness probes.
+	if err := storageServerRequestValidate(r); err != nil {
+		w.Header().Set("X-Otterio-Bootstrap-Error", err.Error())
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte(err.Error()))
+		w.(http.Flusher).Flush()
+		return
+	}
 	cfg := getServerSystemCfg()
 	logger.LogIf(ctx, json.NewEncoder(w).Encode(&cfg))
 	w.(http.Flusher).Flush()
