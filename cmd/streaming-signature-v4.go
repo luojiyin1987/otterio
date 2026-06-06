@@ -88,6 +88,22 @@ func calculateSeedSignature(r *http.Request) (cred auth.Credentials, signature s
 		return cred, "", "", time.Time{}, ErrContentSHA256Mismatch
 	}
 
+	// Reject chunked uploads whose SignedHeaders list does NOT include
+	// `x-amz-decoded-content-length`. That header is what the downstream
+	// chunked reader uses to decide how much real payload it expects to
+	// see; without it being part of the signed material an attacker who
+	// can MITM the connection (or replay a presigned chunked request
+	// against a different endpoint) can rewrite the value at will and
+	// either truncate the upload, smuggle extra bytes, or desync the
+	// length-checking layer above the chunked reader. Real-world SDKs
+	// (otterio-go in this codebase, AWS official SDK v1/v2 for S3) all
+	// include this header in SignedHeaders by default for aws-chunked
+	// uploads, so a hard-reject here only fires on hand-rolled or
+	// hostile clients.
+	if !contains(signV4Values.SignedHeaders, "x-amz-decoded-content-length") {
+		return cred, "", "", time.Time{}, ErrUnsignedHeaders
+	}
+
 	// Extract all the signed headers along with its values.
 	extractedSignedHeaders, errCode := extractSignedHeaders(signV4Values.SignedHeaders, r)
 	if errCode != ErrNone {

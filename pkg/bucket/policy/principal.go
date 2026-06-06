@@ -79,7 +79,11 @@ func (p *Principal) UnmarshalJSON(data []byte) error {
 		}
 
 		if s != "*" {
-			return Errorf("invalid principal '%v'", s)
+			// Do not echo the attacker-controlled raw input back into the
+			// error message: a JSON-injection probe would otherwise see its
+			// own payload reflected verbatim in the response body, which is
+			// useful both for fingerprinting and for log-poisoning.
+			return Errorf(`invalid principal: must be the wildcard "*" or an object`)
 		}
 
 		sp.AWS = set.CreateStringSet("*")

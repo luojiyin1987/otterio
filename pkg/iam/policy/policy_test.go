@@ -1068,8 +1068,11 @@ func TestPolicyUnmarshalJSONAndValidate(t *testing.T) {
 		{case6Data, case6Policy, false, false},
 		{case7Data, case7Policy, false, false},
 		{case8Data, case8Policy, false, false},
-		// Invalid version error.
-		{case9Data, Policy{}, false, true},
+		// Invalid version error: now caught at UnmarshalJSON time because
+		// (*Policy).UnmarshalJSON validates after decoding (matching the
+		// bucket-policy variant). The decode fails, so result stays empty
+		// and Validate() on the zero value succeeds.
+		{case9Data, Policy{}, true, false},
 		// Duplicate statement success, duplicate statement is removed.
 		{case10Data, case10Policy, false, false},
 		// Duplicate statement success (Effect differs).

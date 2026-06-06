@@ -194,6 +194,9 @@ func (iamp *Policy) UnmarshalJSON(data []byte) error {
 	}
 
 	p := Policy(sp)
+	if err := p.isValid(); err != nil {
+		return err
+	}
 	p.dropDuplicateStatements()
 	*iamp = p
 	return nil

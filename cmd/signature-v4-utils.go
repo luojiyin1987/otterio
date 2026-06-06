@@ -36,26 +36,43 @@ import (
 // client did not calculate sha256 of the payload.
 const unsignedPayload = "UNSIGNED-PAYLOAD"
 
+// getContentSha256Header returns the caller-supplied X-Amz-Content-Sha256
+// value and whether it was present, treating an explicitly empty header /
+// query parameter as "not provided". The empty-as-missing rule is what
+// closes upstream-cve-backlog.md row 51's "x-amz-content-sha256 validation"
+// class of issues: the legacy implementation read v[0] off the slice, which
+// (a) panicked on a length-0 slice and (b) accepted v[0] == "" as a real
+// hash, allowing the canonicaliser to compare against an empty string.
+//
+// For presigned requests the query parameter wins over the header, matching
+// the legacy precedence rule and the AWS spec.
+func getContentSha256Header(r *http.Request) (value string, present bool) {
+	if isRequestPresignedSignatureV4(r) {
+		if v, ok := r.URL.Query()[xhttp.AmzContentSha256]; ok && len(v) > 0 && v[0] != "" {
+			return v[0], true
+		}
+	}
+	if v, ok := r.Header[xhttp.AmzContentSha256]; ok && len(v) > 0 && v[0] != "" {
+		return v[0], true
+	}
+	return "", false
+}
+
 // skipContentSha256Cksum returns true if caller needs to skip
 // payload checksum, false if not.
 func skipContentSha256Cksum(r *http.Request) bool {
-	var (
-		v  []string
-		ok bool
-	)
-
-	if isRequestPresignedSignatureV4(r) {
-		v, ok = r.URL.Query()[xhttp.AmzContentSha256]
-		if !ok {
-			v, ok = r.Header[xhttp.AmzContentSha256]
-		}
-	} else {
-		v, ok = r.Header[xhttp.AmzContentSha256]
+	value, present := getContentSha256Header(r)
+	if !present {
+		// No usable X-Amz-Content-Sha256 - skip payload validation. This
+		// matches the AWS-documented default of UNSIGNED-PAYLOAD when the
+		// header is absent on a presigned request, and is the same
+		// behaviour as the legacy implementation when the header was
+		// missing on a signed request.
+		return true
 	}
-
 	// If x-amz-content-sha256 is set and the value is not
 	// 'UNSIGNED-PAYLOAD' we should validate the content sha256.
-	return !(ok && v[0] != unsignedPayload)
+	return value == unsignedPayload
 }
 
 // Returns SHA256 for calculating canonical-request.
@@ -70,35 +87,22 @@ func getContentSha256Cksum(r *http.Request, stype serviceType) string {
 		return hex.EncodeToString(sum256[:])
 	}
 
-	var (
-		defaultSha256Cksum string
-		v                  []string
-		ok                 bool
-	)
+	if value, present := getContentSha256Header(r); present {
+		// We found a non-empty 'X-Amz-Content-Sha256'; return it as-is.
+		// skipContentSha256Cksum already used the same helper to decide
+		// whether the value is UNSIGNED-PAYLOAD, so the two functions stay
+		// in lock-step on what counts as "header was provided".
+		return value
+	}
 
-	// For a presigned request we look at the query param for sha256.
+	// We couldn't find a usable 'X-Amz-Content-Sha256'. Different defaults
+	// apply depending on whether the request was presigned: presigned
+	// defaults to UNSIGNED-PAYLOAD per the AWS spec; signed requests
+	// default to sha256("").
 	if isRequestPresignedSignatureV4(r) {
-		// X-Amz-Content-Sha256, if not set in presigned requests, checksum
-		// will default to 'UNSIGNED-PAYLOAD'.
-		defaultSha256Cksum = unsignedPayload
-		v, ok = r.URL.Query()[xhttp.AmzContentSha256]
-		if !ok {
-			v, ok = r.Header[xhttp.AmzContentSha256]
-		}
-	} else {
-		// X-Amz-Content-Sha256, if not set in signed requests, checksum
-		// will default to sha256([]byte("")).
-		defaultSha256Cksum = emptySHA256
-		v, ok = r.Header[xhttp.AmzContentSha256]
+		return unsignedPayload
 	}
-
-	// We found 'X-Amz-Content-Sha256' return the captured value.
-	if ok {
-		return v[0]
-	}
-
-	// We couldn't find 'X-Amz-Content-Sha256'.
-	return defaultSha256Cksum
+	return emptySHA256
 }
 
 // isValidRegion - verify if incoming region value is valid with configured Region.

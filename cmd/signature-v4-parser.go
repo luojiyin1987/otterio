@@ -153,6 +153,22 @@ func parseSignedHeader(signedHdrElement string) ([]string, APIErrorCode) {
 		return nil, ErrMissingFields
 	}
 	signedHeaders := strings.Split(signedHdrFields[1], ";")
+	// AWS SigV4 mandates that SignedHeaders be a lowercase, sorted list of
+	// header names (https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html).
+	// Some non-conforming clients (and a handful of fuzz/probe inputs we
+	// have seen in the wild) send SignedHeaders=Host;X-Amz-Date instead
+	// of host;x-amz-date. Without normalisation extractSignedHeaders'
+	// `case "host":` and the `contains(signedHeaders, "host")` pre-check
+	// silently fall through, returning ErrUnsignedHeaders even though the
+	// canonical request the client used at signing time would still have
+	// included a lower-cased Host. This is closer to a "false negative
+	// reject" than a privesc, but it does observably leak information about
+	// our case-handling. Normalising here keeps every downstream consumer
+	// (utils.contains, switch case "host", canonical request builder) on
+	// a single representation.
+	for i, h := range signedHeaders {
+		signedHeaders[i] = strings.ToLower(h)
+	}
 	return signedHeaders, ErrNone
 }
 
