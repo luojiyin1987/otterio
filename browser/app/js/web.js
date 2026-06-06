@@ -14,32 +14,38 @@
  * limitations under the License.
  */
 
-import JSONrpc from './jsonrpc'
-import { otterioBrowserPrefix } from './constants.js'
-import Moment from 'moment'
-import storage from 'local-storage-fallback'
+import JSONrpc from "./jsonrpc"
+import { otterioBrowserPrefix } from "./constants.js"
+import dayjs from "dayjs"
+import customParseFormat from "dayjs/plugin/customParseFormat"
+import storage from "local-storage-fallback"
+
+dayjs.extend(customParseFormat)
 
 class Web {
   constructor(endpoint) {
-    const namespace = 'web'
+    const namespace = "web"
     this.JSONrpc = new JSONrpc({
       endpoint,
-      namespace
+      namespace,
     })
   }
   makeCall(method, options) {
-    return this.JSONrpc.call(method, {
-      params: options
-    }, storage.getItem('token'))
+    return this.JSONrpc.call(
+      method,
+      {
+        params: options,
+      },
+      storage.getItem("token")
+    )
       .catch(err => {
         if (err.status === 401) {
-          storage.removeItem('token')
+          storage.removeItem("token")
           location.reload()
-          throw new Error('Please re-login.')
+          throw new Error("Please re-login.")
         }
-        if (err.status)
-          throw new Error(`Server returned error [${err.status}]`)
-        throw new Error('OtterIO server is unreachable')
+        if (err.status) throw new Error(`Server returned error [${err.status}]`)
+        throw new Error("OtterIO server is unreachable")
       })
       .then(res => {
         let json = JSON.parse(res.text)
@@ -54,90 +60,99 @@ class Web {
         // The server only ships a date-formatted version (RFC3339) on release
         // builds; source/dev builds report "DEVELOPMENT.GOGET". Only treat a
         // genuine date version as an update signal so dev builds don't crash
-        // here (Moment can't parse "DEVELOPMENT.GOGET") and never reload-loop.
-        if (Moment(result.uiVersion, Moment.ISO_8601, true).isValid()
-          && result.uiVersion !== currentUiVersion
-          && currentUiVersion !== 'OTTERIO_UI_VERSION') {
-          storage.setItem('newlyUpdated', true)
+        // here (dayjs can't parse "DEVELOPMENT.GOGET") and never reload-loop.
+        // dayjs strict-parses against a list of ISO-8601 layouts so a
+        // dev-build "DEVELOPMENT.GOGET" sentinel doesn't accidentally count
+        // as a real release version and trigger a reload loop.
+        const parsedVersion = dayjs(
+          result.uiVersion,
+          ["YYYY-MM-DDTHH:mm:ssZ", "YYYY-MM-DDTHH:mm:ss.SSSZ"],
+          true
+        )
+        if (
+          parsedVersion.isValid() &&
+          result.uiVersion !== currentUiVersion &&
+          currentUiVersion !== "OTTERIO_UI_VERSION"
+        ) {
+          storage.setItem("newlyUpdated", true)
           location.reload()
         }
         return result
       })
   }
   LoggedIn() {
-    return !!storage.getItem('token')
+    return !!storage.getItem("token")
   }
   Login(args) {
-    return this.makeCall('Login', args)
-      .then(res => {
-        storage.setItem('token', `${res.token}`)
-        return res
-      })
+    return this.makeCall("Login", args).then(res => {
+      storage.setItem("token", `${res.token}`)
+      return res
+    })
   }
   Logout() {
-    storage.removeItem('token')
+    storage.removeItem("token")
   }
   GetToken() {
-    return storage.getItem('token')
+    return storage.getItem("token")
   }
   GetDiscoveryDoc() {
     return this.makeCall("GetDiscoveryDoc")
   }
   LoginSTS(args) {
-    return this.makeCall('LoginSTS', args)
-      .then(res => {
-        storage.setItem('token', `${res.token}`)
-        return res
-      })
+    return this.makeCall("LoginSTS", args).then(res => {
+      storage.setItem("token", `${res.token}`)
+      return res
+    })
   }
   ServerInfo() {
-    return this.makeCall('ServerInfo')
+    return this.makeCall("ServerInfo")
   }
   StorageInfo() {
-    return this.makeCall('StorageInfo')
+    return this.makeCall("StorageInfo")
   }
   ListBuckets() {
-    return this.makeCall('ListBuckets')
+    return this.makeCall("ListBuckets")
   }
   MakeBucket(args) {
-    return this.makeCall('MakeBucket', args)
+    return this.makeCall("MakeBucket", args)
   }
   DeleteBucket(args) {
-    return this.makeCall('DeleteBucket', args)
+    return this.makeCall("DeleteBucket", args)
   }
   ListObjects(args) {
-    return this.makeCall('ListObjects', args)
+    return this.makeCall("ListObjects", args)
   }
   PresignedGet(args) {
-    return this.makeCall('PresignedGet', args)
+    return this.makeCall("PresignedGet", args)
   }
   PutObjectURL(args) {
-    return this.makeCall('PutObjectURL', args)
+    return this.makeCall("PutObjectURL", args)
   }
   RemoveObject(args) {
-    return this.makeCall('RemoveObject', args)
+    return this.makeCall("RemoveObject", args)
   }
   SetAuth(args) {
-    return this.makeCall('SetAuth', args)
-      .then(res => {
-        storage.setItem('token', `${res.token}`)
-        return res
-      })
+    return this.makeCall("SetAuth", args).then(res => {
+      storage.setItem("token", `${res.token}`)
+      return res
+    })
   }
   CreateURLToken() {
-    return this.makeCall('CreateURLToken')
+    return this.makeCall("CreateURLToken")
   }
   GetBucketPolicy(args) {
-    return this.makeCall('GetBucketPolicy', args)
+    return this.makeCall("GetBucketPolicy", args)
   }
   SetBucketPolicy(args) {
-    return this.makeCall('SetBucketPolicy', args)
+    return this.makeCall("SetBucketPolicy", args)
   }
   ListAllBucketPolicies(args) {
-    return this.makeCall('ListAllBucketPolicies', args)
+    return this.makeCall("ListAllBucketPolicies", args)
   }
 }
 
-const web = new Web(`${window.location.protocol}//${window.location.host}${otterioBrowserPrefix}/webrpc`);
+const web = new Web(
+  `${window.location.protocol}//${window.location.host}${otterioBrowserPrefix}/webrpc`
+)
 
-export default web;
+export default web

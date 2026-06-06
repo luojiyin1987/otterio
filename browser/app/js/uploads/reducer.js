@@ -1,67 +1,44 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-import * as uploadsActions from "./actions"
+import { createSlice } from "@reduxjs/toolkit"
 
-const add = (files, action) => ({
-  ...files,
-  [action.slug]: {
-    loaded: 0,
-    size: action.size,
-    name: action.name
-  }
-})
-
-const updateProgress = (files, action) => ({
-  ...files,
-  [action.slug]: {
-    ...files[action.slug],
-    loaded: action.loaded
-  }
-})
-
-const stop = (files, action) => {
-  const newFiles = Object.assign({}, files)
-  delete newFiles[action.slug]
-  return newFiles
+const initialState = {
+  files: {},
+  showAbortModal: false,
 }
 
-export default (state = { files: {}, showAbortModal: false }, action) => {
-  switch (action.type) {
-    case uploadsActions.ADD:
-      return {
-        ...state,
-        files: add(state.files, action)
+const uploadsSlice = createSlice({
+  name: "uploads",
+  initialState,
+  reducers: {
+    ADD: (state, action) => {
+      state.files[action.slug] = {
+        loaded: 0,
+        size: action.size,
+        name: action.name,
       }
-    case uploadsActions.UPDATE_PROGRESS:
-      return {
-        ...state,
-        files: updateProgress(state.files, action)
+    },
+    UPDATE_PROGRESS: (state, action) => {
+      if (state.files[action.slug]) {
+        state.files[action.slug].loaded = action.loaded
       }
-    case uploadsActions.STOP:
-      return {
-        ...state,
-        files: stop(state.files, action)
-      }
-    case uploadsActions.SHOW_ABORT_MODAL:
-      return {
-        ...state,
-        showAbortModal: action.show
-      }
-    default:
-      return state
-  }
-}
+    },
+    STOP: (state, action) => {
+      delete state.files[action.slug]
+    },
+    SHOW_ABORT_MODAL: (state, action) => {
+      state.showAbortModal = action.show
+    },
+  },
+})
+
+export default uploadsSlice.reducer

@@ -16,8 +16,11 @@
 
 import React from "react"
 import { connect } from "react-redux"
-import humanize from "humanize"
-import Moment from "moment"
+import { filesize } from "filesize"
+import dayjs from "dayjs"
+import localizedFormat from "dayjs/plugin/localizedFormat"
+
+dayjs.extend(localizedFormat)
 import ObjectItem from "./ObjectItem"
 import ObjectActions from "./ObjectActions"
 import * as actionsObjects from "./actions"
@@ -26,13 +29,13 @@ import { getCheckedList } from "./selectors"
 export const ObjectContainer = ({
   object,
   checkedObjectsCount,
-  downloadObject
+  downloadObject,
 }) => {
   let props = {
     name: object.name,
     contentType: object.contentType,
-    size: humanize.filesize(object.size),
-    lastModified: Moment(object.lastModified).format("lll")
+    size: filesize(object.size),
+    lastModified: dayjs(object.lastModified).format("lll"),
   }
   if (checkedObjectsCount == 0) {
     props.actionButtons = <ObjectActions object={object} />
@@ -42,7 +45,7 @@ export const ObjectContainer = ({
 
 const mapStateToProps = state => {
   return {
-    checkedObjectsCount: getCheckedList(state).length
+    checkedObjectsCount: getCheckedList(state).length,
   }
 }
 

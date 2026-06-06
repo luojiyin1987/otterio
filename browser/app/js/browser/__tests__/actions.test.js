@@ -21,7 +21,7 @@ import * as actionsCommon from "../actions"
 jest.mock("../../web", () => ({
   StorageInfo: jest.fn(() => {
     return Promise.resolve({
-      used: 60
+      used: 60,
     })
   }),
   ServerInfo: jest.fn(() => {
@@ -29,9 +29,9 @@ jest.mock("../../web", () => ({
       OtterioVersion: "test",
       OtterioPlatform: "test",
       OtterioRuntime: "test",
-      OtterioGlobalInfo: "test"
+      OtterioGlobalInfo: "test",
     })
-  })
+  }),
 }))
 
 const middlewares = [thunk]
@@ -41,7 +41,7 @@ describe("Common actions", () => {
   it("creates common/SET_STORAGE_INFO after fetching the storage details ", () => {
     const store = mockStore()
     const expectedActions = [
-      { type: "common/SET_STORAGE_INFO", storageInfo: { used: 60 } }
+      { type: "common/SET_STORAGE_INFO", storageInfo: { used: 60 } },
     ]
     return store.dispatch(actionsCommon.fetchStorageInfo()).then(() => {
       const actions = store.getActions()
@@ -58,9 +58,9 @@ describe("Common actions", () => {
           version: "test",
           platform: "test",
           runtime: "test",
-          info: "test"
-        }
-      }
+          info: "test",
+        },
+      },
     ]
     return store.dispatch(actionsCommon.fetchServerInfo()).then(() => {
       const actions = store.getActions()

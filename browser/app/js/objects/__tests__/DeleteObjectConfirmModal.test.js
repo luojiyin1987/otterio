@@ -1,45 +1,47 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import React from "react"
-import { shallow } from "enzyme"
+import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { DeleteObjectConfirmModal } from "../DeleteObjectConfirmModal"
 
 describe("DeleteObjectConfirmModal", () => {
-  it("should render without crashing", () => {
-    shallow(<DeleteObjectConfirmModal />)
+  it("renders without crashing", () => {
+    render(<DeleteObjectConfirmModal deleteObject={() => {}} hideDeleteConfirmModal={() => {}} />)
   })
 
-  it("should call deleteObject when Delete is clicked", () => {
+  it("calls deleteObject when Delete is clicked", async () => {
+    const user = userEvent.setup()
     const deleteObject = jest.fn()
-    const wrapper = shallow(
-      <DeleteObjectConfirmModal deleteObject={deleteObject} />
+    render(
+      <DeleteObjectConfirmModal
+        deleteObject={deleteObject}
+        hideDeleteConfirmModal={() => {}}
+      />
     )
-    wrapper.find("ConfirmModal").prop("okHandler")()
+    await user.click(screen.getByText("Delete"))
     expect(deleteObject).toHaveBeenCalled()
   })
 
-  it("should call hideDeleteConfirmModal when Cancel is clicked", () => {
-    const hideDeleteConfirmModal = jest.fn()
-    const wrapper = shallow(
+  it("calls hideDeleteConfirmModal when Cancel is clicked", async () => {
+    const user = userEvent.setup()
+    const hide = jest.fn()
+    render(
       <DeleteObjectConfirmModal
-        hideDeleteConfirmModal={hideDeleteConfirmModal}
+        deleteObject={() => {}}
+        hideDeleteConfirmModal={hide}
       />
     )
-    wrapper.find("ConfirmModal").prop("cancelHandler")()
-    expect(hideDeleteConfirmModal).toHaveBeenCalled()
+    await user.click(screen.getByText("Cancel"))
+    expect(hide).toHaveBeenCalled()
   })
 })

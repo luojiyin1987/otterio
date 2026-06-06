@@ -35,8 +35,7 @@ export const ObjectsSearch = ({ onChange }) => (
 
 const mapDispatchToProps = dispatch => {
   return {
-    onChange: filter =>
-      dispatch(actionsObjects.setFilter(filter))
+    onChange: filter => dispatch(actionsObjects.setFilter(filter)),
   }
 }
 

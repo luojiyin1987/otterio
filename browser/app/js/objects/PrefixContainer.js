@@ -25,12 +25,12 @@ export const PrefixContainer = ({
   object,
   currentPrefix,
   checkedObjectsCount,
-  selectPrefix
+  selectPrefix,
 }) => {
   const props = {
     name: object.name,
     contentType: object.contentType,
-    onClick: () => selectPrefix(`${currentPrefix}${object.name}`)
+    onClick: () => selectPrefix(`${currentPrefix}${object.name}`),
   }
   if (checkedObjectsCount == 0) {
     props.actionButtons = <PrefixActions object={object} />
@@ -42,13 +42,13 @@ const mapStateToProps = (state, ownProps) => {
   return {
     object: ownProps.object,
     currentPrefix: state.objects.currentPrefix,
-    checkedObjectsCount: getCheckedList(state).length
+    checkedObjectsCount: getCheckedList(state).length,
   }
 }
 
 const mapDispatchToProps = dispatch => {
   return {
-    selectPrefix: prefix => dispatch(actionsObjects.selectPrefix(prefix))
+    selectPrefix: prefix => dispatch(actionsObjects.selectPrefix(prefix)),
   }
 }
 

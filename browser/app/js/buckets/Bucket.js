@@ -22,7 +22,7 @@ export const Bucket = ({ bucket, isActive, selectBucket }) => {
   return (
     <li
       className={classNames({
-        active: isActive
+        active: isActive,
       })}
       onClick={e => {
         e.preventDefault()
@@ -32,12 +32,12 @@ export const Bucket = ({ bucket, isActive, selectBucket }) => {
       <a
         href=""
         className={classNames({
-          "fesli-loading": false
+          "fesli-loading": false,
         })}
       >
         {bucket}
       </a>
-      <BucketDropdown bucket={bucket}/>
+      <BucketDropdown bucket={bucket} />
     </li>
   )
 }

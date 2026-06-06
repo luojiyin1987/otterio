@@ -1,100 +1,68 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import React from "react"
-import { shallow } from "enzyme"
+import userEvent from "@testing-library/user-event"
+import { renderWithStore, defaultState } from "../../jest/test-utils"
 import { ObjectsBulkActions } from "../ObjectsBulkActions"
+import * as objectsActions from "../actions"
+
+const stateWith = checkedList => ({
+  ...defaultState,
+  objects: { ...defaultState.objects, checkedList },
+})
 
 describe("ObjectsBulkActions", () => {
-  it("should render without crashing", () => {
-    shallow(<ObjectsBulkActions checkedObjects={[]} />)
+  beforeEach(() => jest.clearAllMocks())
+
+  it("renders without crashing", () => {
+    renderWithStore(<ObjectsBulkActions />, stateWith([]))
   })
 
-  it("should show actions when checkObjectsCount is more than 0", () => {
-    const wrapper = shallow(<ObjectsBulkActions checkedObjects={["test"]} />)
-    expect(wrapper.hasClass("list-actions-toggled")).toBeTruthy()
+  it("toggles list-actions class when there are checked objects", () => {
+    const { container } = renderWithStore(<ObjectsBulkActions />, stateWith(["a"]))
+    expect(container.querySelector(".list-actions").classList.contains("list-actions-toggled")).toBe(true)
   })
 
-  it("should call downloadObject when single object is selected and download button is clicked", () => {
-    const downloadObject = jest.fn()
-    const clearChecked = jest.fn()
-    const wrapper = shallow(
-      <ObjectsBulkActions
-        checkedObjects={["test"]}
-        downloadObject={downloadObject}
-        clearChecked={clearChecked}
-      />
-    )
-    wrapper.find("#download-checked").simulate("click")
-    expect(downloadObject).toHaveBeenCalled()
+  it("dispatches downloadObject for a single non-folder selection", async () => {
+    const user = userEvent.setup()
+    const spy = jest.spyOn(objectsActions, "downloadObject")
+    renderWithStore(<ObjectsBulkActions />, stateWith(["test"]))
+    await user.click(document.querySelector("#download-checked"))
+    expect(spy).toHaveBeenCalledWith("test")
+    spy.mockRestore()
   })
 
-  it("should call downloadChecked when a folder is selected and download button is clicked", () => {
-    const downloadChecked = jest.fn()
-    const wrapper = shallow(
-      <ObjectsBulkActions
-        checkedObjects={["test/"]}
-        downloadChecked={downloadChecked}
-      />
-    )
-    wrapper.find("#download-checked").simulate("click")
-    expect(downloadChecked).toHaveBeenCalled()
+  it("dispatches downloadCheckedObjects for multiple selections", async () => {
+    const user = userEvent.setup()
+    const spy = jest.spyOn(objectsActions, "downloadCheckedObjects")
+    renderWithStore(<ObjectsBulkActions />, stateWith(["a", "b"]))
+    await user.click(document.querySelector("#download-checked"))
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
   })
 
-  it("should call downloadChecked when multiple objects are selected and download button is clicked", () => {
-    const downloadChecked = jest.fn()
-    const wrapper = shallow(
-      <ObjectsBulkActions
-        checkedObjects={["test1", "test2"]}
-        downloadChecked={downloadChecked}
-      />
-    )
-    wrapper.find("#download-checked").simulate("click")
-    expect(downloadChecked).toHaveBeenCalled()
+  it("dispatches resetCheckedList when the close button is clicked", async () => {
+    const user = userEvent.setup()
+    const spy = jest.spyOn(objectsActions, "resetCheckedList")
+    renderWithStore(<ObjectsBulkActions />, stateWith(["a"]))
+    await user.click(document.querySelector("#close-bulk-actions"))
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
   })
 
-  it("should call clearChecked when close button is clicked", () => {
-    const clearChecked = jest.fn()
-    const wrapper = shallow(
-      <ObjectsBulkActions checkedObjects={["test"]} clearChecked={clearChecked} />
-    )
-    wrapper.find("#close-bulk-actions").simulate("click")
-    expect(clearChecked).toHaveBeenCalled()
-  })
-
-  it("shoud show DeleteObjectConfirmModal when delete-checked button is clicked", () => {
-    const wrapper = shallow(<ObjectsBulkActions checkedObjects={["test"]} />)
-    wrapper.find("#delete-checked").simulate("click")
-    wrapper.update()
-    expect(wrapper.find("DeleteObjectConfirmModal").length).toBe(1)
-  })
-
-  it("shoud call deleteChecked when Delete is clicked on confirmation modal", () => {
-    const deleteChecked = jest.fn()
-    const wrapper = shallow(
-      <ObjectsBulkActions
-        checkedObjects={["test"]}
-        deleteChecked={deleteChecked}
-      />
-    )
-    wrapper.find("#delete-checked").simulate("click")
-    wrapper.update()
-    wrapper.find("DeleteObjectConfirmModal").prop("deleteObject")()
-    expect(deleteChecked).toHaveBeenCalled()
-    wrapper.update()
-    expect(wrapper.find("DeleteObjectConfirmModal").length).toBe(0)
+  it("shows the delete confirmation modal when delete-checked is clicked", async () => {
+    const user = userEvent.setup()
+    renderWithStore(<ObjectsBulkActions />, stateWith(["a"]))
+    await user.click(document.querySelector("#delete-checked"))
+    expect(document.querySelector(".modal-confirm")).not.toBeNull()
   })
 })

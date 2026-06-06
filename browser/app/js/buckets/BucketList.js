@@ -1,22 +1,16 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-import React from "react"
-import { connect } from "react-redux"
-import { Scrollbars } from "react-custom-scrollbars"
+import React, { useEffect, useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
 import InfiniteScroll from "react-infinite-scroller"
 import * as actionsBuckets from "./actions"
 import { getFilteredBuckets } from "./selectors"
@@ -25,85 +19,57 @@ import web from "../web"
 import history from "../history"
 import { pathSlice } from "../utils"
 
-export class BucketList extends React.Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      page: 1
-    }
-    this.loadNextPage = this.loadNextPage.bind(this)
-  }
-  componentDidUpdate(prevProps) {
-    if (this.props.filter !== prevProps.filter) {
-      this.setState({
-        page: 1
-      })
-    }
-  }
-  componentWillMount() {
-    const { fetchBuckets, setBucketList, selectBucket } = this.props
+export const BucketList = () => {
+  const [page, setPage] = useState(1)
+
+  const dispatch = useDispatch()
+  const filteredBuckets = useSelector(getFilteredBuckets)
+  const filter = useSelector(state => state.buckets.filter)
+
+  // Initial load: ask the API for buckets when logged in, or replay any
+  // bucket+prefix already in the URL when anonymous (the public-bucket case).
+  useEffect(() => {
     if (web.LoggedIn()) {
-      fetchBuckets()
+      dispatch(actionsBuckets.fetchBuckets())
     } else {
       const { bucket, prefix } = pathSlice(history.location.pathname)
       if (bucket) {
-        setBucketList([bucket])
-        selectBucket(bucket, prefix)
+        dispatch(actionsBuckets.setList([bucket]))
+        dispatch(actionsBuckets.selectBucket(bucket, prefix))
       } else {
         history.replace("/login")
       }
     }
-  }
-  loadNextPage() {
-    this.setState({
-      page: this.state.page + 1
-    })
-  }
-  render() {
-    const { filteredBuckets } = this.props
-    const visibleBuckets = filteredBuckets.slice(0, this.state.page * 100)
-    return (
-      <div className="fesl-inner">
-        <Scrollbars
-          renderTrackVertical={props => <div className="scrollbar-vertical" />}
-        >
-          <InfiniteScroll
-            pageStart={0}
-            loadMore={this.loadNextPage}
-            hasMore={filteredBuckets.length > visibleBuckets.length}
-            useWindow={false}
-            element="div"
-            initialLoad={false}
-          >
-            <ul>
-              {visibleBuckets.map(bucket => (
-                <BucketContainer key={bucket} bucket={bucket} />
-              ))}
-            </ul>
-          </InfiniteScroll>
-        </Scrollbars>
-      </div>
-    )
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Reset pagination when the search filter changes.
+  useEffect(() => {
+    setPage(1)
+  }, [filter])
+
+  const visibleBuckets = filteredBuckets.slice(0, page * 100)
+  return (
+    // react-custom-scrollbars (React 15-era, unmaintained) was previously
+    // wrapping this list. Native overflow-y handles it just as well in
+    // every browser we care about; the CSS class hook is kept for styling.
+    <div className="fesl-inner scrollable">
+      <InfiniteScroll
+        pageStart={0}
+        loadMore={() => setPage(p => p + 1)}
+        hasMore={filteredBuckets.length > visibleBuckets.length}
+        useWindow={false}
+        element="div"
+        initialLoad={false}
+      >
+        <ul>
+          {visibleBuckets.map(bucket => (
+            <BucketContainer key={bucket} bucket={bucket} />
+          ))}
+        </ul>
+      </InfiniteScroll>
+    </div>
+  )
 }
 
-const mapStateToProps = state => {
-  return {
-    filteredBuckets: getFilteredBuckets(state),
-    filter: state.buckets.filter
-  }
-}
-
-const mapDispatchToProps = dispatch => {
-  return {
-    fetchBuckets: () => dispatch(actionsBuckets.fetchBuckets()),
-    setBucketList: buckets => dispatch(actionsBuckets.setList(buckets)),
-    selectBucket: (bucket, prefix) =>
-      dispatch(actionsBuckets.selectBucket(bucket, prefix))
-  }
-}
-
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(BucketList)
+export default BucketList

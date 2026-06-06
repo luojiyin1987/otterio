@@ -15,13 +15,17 @@
  */
 
 import React from "react"
-import AlertComponent from "react-bootstrap/lib/Alert"
+import { Alert as AlertComponent } from "react-bootstrap"
 
+// react-bootstrap v2 renamed `bsStyle` -> `variant` and replaced
+// `onDismiss` with `dismissible` + `onClose`. Mapping is straight-through;
+// alert types ("danger"/"success"/"info") match BS5 variants 1:1.
 const Alert = ({ show, type, message, onDismiss }) => (
   <AlertComponent
     className={"alert animated " + (show ? "fadeInDown" : "fadeOutUp")}
-    bsStyle={type}
-    onDismiss={onDismiss}
+    variant={type}
+    dismissible
+    onClose={onDismiss}
   >
     <div className="text-center">{message}</div>
   </AlertComponent>

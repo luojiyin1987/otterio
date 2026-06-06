@@ -16,8 +16,6 @@
 
 import React from "react"
 import { connect } from "react-redux"
-import humanize from "humanize"
-import Moment from "moment"
 import { getDataType } from "../mime"
 import * as actions from "./actions"
 import { getCheckedList } from "./selectors"
@@ -31,7 +29,7 @@ export const ObjectItem = ({
   checkObject,
   uncheckObject,
   actionButtons,
-  onClick
+  onClick,
 }) => {
   return (
     <div className={"fesl-row"} data-type={getDataType(name, contentType)}>
@@ -74,14 +72,14 @@ export const ObjectItem = ({
 
 const mapStateToProps = (state, ownProps) => {
   return {
-    checked: getCheckedList(state).indexOf(ownProps.name) >= 0
+    checked: getCheckedList(state).indexOf(ownProps.name) >= 0,
   }
 }
 
 const mapDispatchToProps = dispatch => {
   return {
     checkObject: name => dispatch(actions.checkObject(name)),
-    uncheckObject: name => dispatch(actions.uncheckObject(name))
+    uncheckObject: name => dispatch(actions.uncheckObject(name)),
   }
 }
 

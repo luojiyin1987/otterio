@@ -25,5 +25,8 @@ type webAPIHandlers struct {
 
 const assetPrefix = "production"
 
-// specialAssets are files which are unique files not embedded inside index_bundle.js.
-const specialAssets = "index_bundle.*.js|loader.css|logo.png|favicon-16x16.png|favicon-32x32.png|favicon-96x96.png"
+// specialAssets enumerates files served verbatim from the production embed
+// (anything else is treated as a SPA route and rewritten to index.html).
+// Includes the JS/CSS bundles, the loader splash, favicons/logo, and the
+// hashed asset/resource outputs under fonts/ and images/.
+const specialAssets = "index_bundle.js|index_bundle.css|loader.css|logo.png|favicon-16x16.png|favicon-32x32.png|favicon-96x96.png|fonts/[^/]+|images/[^/]+"

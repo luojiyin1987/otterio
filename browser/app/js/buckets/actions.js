@@ -1,24 +1,22 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import web from "../web"
 import history from "../history"
-import * as alertActions from "../alert/actions"
 import * as objectsActions from "../objects/actions"
 import { pathSlice } from "../utils"
+import {
+  dispatchAlertError,
+  dispatchAlertInfo,
+} from "../utils/alertDispatch"
 
 export const SET_LIST = "buckets/SET_LIST"
 export const ADD = "buckets/ADD"
@@ -30,175 +28,135 @@ export const SHOW_BUCKET_POLICY = "buckets/SHOW_BUCKET_POLICY"
 export const SET_POLICIES = "buckets/SET_POLICIES"
 
 export const fetchBuckets = () => {
-  return function(dispatch) {
+  return function (dispatch) {
     const { bucket, prefix } = pathSlice(history.location.pathname)
-    return web.ListBuckets().then(res => {
-      const buckets = res.buckets ? res.buckets.map(bucket => bucket.name) : []
-      if (buckets.length > 0) {
-        dispatch(setList(buckets))
-        if (bucket && buckets.indexOf(bucket) > -1) {
-          dispatch(selectBucket(bucket, prefix))
+    return web
+      .ListBuckets()
+      .then(res => {
+        const buckets = res.buckets
+          ? res.buckets.map(bucket => bucket.name)
+          : []
+        if (buckets.length > 0) {
+          dispatch(setList(buckets))
+          if (bucket && buckets.indexOf(bucket) > -1) {
+            dispatch(selectBucket(bucket, prefix))
+          } else {
+            dispatch(selectBucket(buckets[0]))
+          }
         } else {
-          dispatch(selectBucket(buckets[0]))
+          if (bucket) {
+            dispatch(setList([bucket]))
+            dispatch(selectBucket(bucket, prefix))
+          } else {
+            dispatch(selectBucket(""))
+            history.replace("/")
+          }
         }
-      } else {
-        if (bucket) {
+      })
+      .catch(err => {
+        if (
+          (bucket && err.message === "Access Denied.") ||
+          err.message.indexOf("Prefix access is denied") > -1
+        ) {
           dispatch(setList([bucket]))
           dispatch(selectBucket(bucket, prefix))
         } else {
-          dispatch(selectBucket(""))
-          history.replace("/")
+          dispatchAlertError(dispatch, err, { autoClear: true })
         }
-      }
-    })
-    .catch(err => {
-      if (bucket && err.message === "Access Denied." || err.message.indexOf('Prefix access is denied') > -1 ) {
-        dispatch(setList([bucket]))
-        dispatch(selectBucket(bucket, prefix))
-      } else {
-        dispatch(
-          alertActions.set({
-            type: "danger",
-            message: err.message,
-            autoClear: true,
-          })
-        )
-      }
-    })
+      })
   }
 }
 
-export const setList = buckets => {
-  return {
-    type: SET_LIST,
-    buckets
-  }
-}
+export const setList = buckets => ({
+  type: SET_LIST,
+  buckets,
+})
 
-export const setFilter = filter => {
-  return {
-    type: SET_FILTER,
-    filter
-  }
-}
+export const setFilter = filter => ({
+  type: SET_FILTER,
+  filter,
+})
 
 export const selectBucket = (bucket, prefix) => {
-  return function(dispatch) {
+  return function (dispatch) {
     dispatch(setCurrentBucket(bucket))
     dispatch(objectsActions.selectPrefix(prefix || ""))
   }
 }
 
-export const setCurrentBucket = bucket => {
-  return {
-    type: SET_CURRENT_BUCKET,
-    bucket
-  }
-}
+export const setCurrentBucket = bucket => ({
+  type: SET_CURRENT_BUCKET,
+  bucket,
+})
 
 export const makeBucket = bucket => {
-  return function(dispatch) {
+  return function (dispatch) {
     return web
-      .MakeBucket({
-        bucketName: bucket
-      })
+      .MakeBucket({ bucketName: bucket })
       .then(() => {
         dispatch(addBucket(bucket))
         dispatch(selectBucket(bucket))
       })
-      .catch(err =>
-        dispatch(
-          alertActions.set({
-            type: "danger",
-            message: err.message
-          })
-        )
-      )
+      .catch(err => dispatchAlertError(dispatch, err))
   }
 }
 
 export const deleteBucket = bucket => {
-  return function(dispatch) {
+  return function (dispatch) {
     return web
-      .DeleteBucket({
-        bucketName: bucket
-      })
+      .DeleteBucket({ bucketName: bucket })
       .then(() => {
-        dispatch(
-          alertActions.set({
-            type: "info",
-            message: "Bucket '" + bucket + "' has been deleted."
-          })
-        )
+        dispatchAlertInfo(dispatch, `Bucket '${bucket}' has been deleted.`)
         dispatch(removeBucket(bucket))
         dispatch(fetchBuckets())
       })
-      .catch(err => { 
-        dispatch(
-          alertActions.set({
-            type: "danger",
-            message: err.message
-          })
-        )
-      })
+      .catch(err => dispatchAlertError(dispatch, err))
   }
 }
 
 export const addBucket = bucket => ({
   type: ADD,
-  bucket
+  bucket,
 })
 
 export const removeBucket = bucket => ({
   type: REMOVE,
-  bucket
+  bucket,
 })
 
 export const showMakeBucketModal = () => ({
   type: SHOW_MAKE_BUCKET_MODAL,
-  show: true
+  show: true,
 })
 
 export const hideMakeBucketModal = () => ({
   type: SHOW_MAKE_BUCKET_MODAL,
-  show: false
+  show: false,
 })
 
 export const fetchPolicies = bucket => {
-  return function(dispatch) {
+  return function (dispatch) {
     return web
-      .ListAllBucketPolicies({
-        bucketName: bucket
-      })
+      .ListAllBucketPolicies({ bucketName: bucket })
       .then(res => {
-        let policies = res.policies
-        if(policies)
-          dispatch(setPolicies(policies))
-        else
-          dispatch(setPolicies([]))
+        const policies = res.policies || []
+        dispatch(setPolicies(policies))
       })
-      .catch(err => {
-        dispatch(
-          alertActions.set({
-            type: "danger",
-            message: err.message
-          })
-        )
-      })
+      .catch(err => dispatchAlertError(dispatch, err))
   }
 }
 
 export const setPolicies = policies => ({
   type: SET_POLICIES,
-  policies
+  policies,
 })
 
 export const showBucketPolicy = () => ({
   type: SHOW_BUCKET_POLICY,
-  show: true
+  show: true,
 })
 
 export const hideBucketPolicy = () => ({
   type: SHOW_BUCKET_POLICY,
-  show: false
+  show: false,
 })

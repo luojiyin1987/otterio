@@ -7,45 +7,26 @@
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-var async = require('async')
-var exec = require('child_process').exec
-var fs = require('fs')
+const { execSync } = require("child_process")
+const fs = require("fs")
+const path = require("path")
 
-var isProduction = process.env.NODE_ENV == 'production' ? true : false
+const isProduction = process.env.NODE_ENV === "production"
+const configFile = isProduction ? "webpack.prod.js" : "webpack.dev.js"
 
-rmDir = function(dirPath) {
-  try { var files = fs.readdirSync(dirPath); }
-  catch(e) { return; }
-  if (files.length > 0)
-    for (var i = 0; i < files.length; i++) {
-      var filePath = dirPath + '/' + files[i];
-      if (fs.statSync(filePath).isFile())
-        fs.unlinkSync(filePath);
-      else
-        rmDir(filePath);
-    }
-  fs.rmdirSync(dirPath);
-};
+const targets = ["production", "dev"]
+for (const dir of targets) {
+  fs.rmSync(path.join(__dirname, dir), { recursive: true, force: true })
+}
 
-async.waterfall([
-    function(cb) {
-      rmDir('production');
-      rmDir('dev');
-      var cmd = 'webpack --config webpack.production.config.js'
-      if (!isProduction) {
-        cmd = 'webpack --config webpack.config.js';
-      }
-      console.log('Running', cmd)
-      exec(cmd, cb)
-    },
-  ], function(err) {
-    if (err) return console.log(err)
-  })
+const webpackBin = path.join(__dirname, "node_modules", ".bin", "webpack")
+const cmd = `"${webpackBin}" --config ${configFile}`
+console.log("Running", cmd)
+
+try {
+  execSync(cmd, { stdio: "inherit", cwd: __dirname })
+} catch (err) {
+  process.exit(err.status || 1)
+}

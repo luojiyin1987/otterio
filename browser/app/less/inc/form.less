@@ -1,18 +1,37 @@
+/*--------------------------
+    Form Controls
+----------------------------*/
 .form-control {
     border: 0;
-    border-bottom: 1px solid @input-border;
-    color: #32393F;
-    padding: 5px;
-    width: 100%;
-    font-size: 13px;
+    border-bottom: 1px solid var(--color-input-border);
+    color: var(--color-text-strong);
     background-color: transparent;
+    padding: 8px 6px;
+    width: 100%;
+    font-size: @font-size-sm;
+    border-radius: 0;
+    line-height: 1.5;
+    transition: border-color @duration-fast @ease-standard,
+                box-shadow @duration-fast @ease-standard;
+    box-shadow: none;
+
+    &::placeholder {
+        color: var(--color-input-placeholder);
+    }
+
+    &:focus {
+        background-color: transparent;
+        box-shadow: none;
+        border-color: var(--color-input-border-focus);
+        outline: 0;
+    }
 }
 
 .form-control--path {
-    color: @link-color;
+    color: var(--color-text-link);
     padding: 5px 5px 6px 0;
-    font-size: 16px;
-    .placeholder(@text-muted-color)
+    font-size: @font-size-md;
+    .placeholder(var(--color-input-placeholder));
 }
 
 select.form-control {
@@ -20,37 +39,50 @@ select.form-control {
     -moz-appearance: none;
     border-radius: 0;
     background: url(../../img/select-caret.svg) no-repeat bottom 7px right;
-
+    padding-right: @space-6;
 }
 
 
 /*--------------------------
-    Input Group
+    Input Group (floating label)
 ----------------------------*/
 .input-group {
+    /* Reset BS5 input-group flex behaviour so the floating-label container
+       continues to work. */
+    display: block;
+    width: auto;
+    flex-wrap: nowrap;
+    align-items: initial;
     position: relative;
+
     &:not(:last-child) {
-        margin-bottom: 25px;
+        margin-bottom: @space-6;
     }
 
     label:not(.ig-label) {
-        font-size: 13px;
+        font-size: @font-size-sm;
         display: block;
-        margin-bottom: 10px;
+        margin-bottom: @space-2;
+        color: var(--color-text-muted);
+        font-weight: @font-weight-medium;
     }
 }
 
 .ig-label {
     position: absolute;
     text-align: center;
-    bottom: 7px;
+    bottom: 9px;
     left: 0;
     width: 100%;
-    .transition(all);
-    .transition-duration(250ms);
+    color: var(--color-input-placeholder);
+    transition: bottom @duration-base @ease-emphasized,
+                font-size @duration-base @ease-emphasized,
+                color @duration-base @ease-emphasized;
     padding: 2px 0 3px;
-    border-radius: 2px;
-    font-weight: 400;
+    border-radius: @radius-xs;
+    font-weight: @font-weight-normal;
+    font-size: @font-size-base;
+    pointer-events: none;
 }
 
 .ig-helpers {
@@ -70,33 +102,27 @@ select.form-control {
     &:after {
         content: '';
         width: 0;
-        .transition(all);
-        .transition-duration(250ms);
-        background-color: #03A9F4;
+        transition: width @duration-base @ease-emphasized;
+        background-color: var(--color-input-border-focus);
     }
 
-    &:before {
-        left: 50%;
-    }
-
-    &:after {
-        right: 50%;
-    }
+    &:before { left: 50%; }
+    &:after  { right: 50%; }
 }
 
 .ig-text {
     width: 100%;
-    height: 40px;
+    height: 42px;
     border: 0;
     background: transparent !important;
     text-align: center;
     position: relative;
     z-index: 1;
-    border-bottom: 1px solid #eee;
-    color: #32393F;
+    border-bottom: 1px solid var(--color-input-border);
+    color: var(--color-text-strong);
     box-shadow: none;
-    font-size: 13px;
-
+    font-size: @font-size-base;
+    transition: border-color @duration-fast @ease-standard;
 
     &:focus + .ig-helpers {
         &:before,
@@ -109,27 +135,44 @@ select.form-control {
     &:disabled,
     &:focus {
         & ~ .ig-label {
-            bottom: 35px;
-            font-size: 13px;
+            bottom: 38px;
+            font-size: @font-size-xs;
+            font-weight: @font-weight-medium;
+            color: var(--color-text-muted);
             z-index: 1;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
     }
 
+    &:focus ~ .ig-label {
+        color: var(--color-input-border-focus);
+    }
+
     &:disabled {
-        .opacity(0.5);
+        opacity: 0.55;
     }
 }
 
 .ig-dark {
     .ig-text {
-        color: @white !important;
-        border-color: rgba(255,255,255,0.1) !important;
+        color: #ffffff !important;
+        border-color: rgba(255, 255, 255, 0.18) !important;
+    }
+
+    .ig-label {
+        color: rgba(255, 255, 255, 0.45);
+    }
+
+    .ig-text:focus ~ .ig-label,
+    .ig-text:valid ~ .ig-label {
+        color: rgba(255, 255, 255, 0.7);
     }
 
     .ig-helpers {
         &:before,
         &:after {
-            background-color: #dfdfdf;
+            background-color: rgba(255, 255, 255, 0.85);
             height: 1px;
         }
     }
@@ -144,28 +187,29 @@ select.form-control {
 
 .ig-error {
     .ig-label {
-        color: #E23F3F;
+        color: var(--color-danger);
     }
     .ig-helpers i {
         &:first-child,
         &:first-child:before,
         &:first-child:after {
-            background: rgba(226, 63, 63, 0.43);
+            background: rgba(239, 94, 94, 0.4);
         }
         &:last-child,
         &:last-child:before,
         &:last-child:after {
-            background: #E23F3F !important;
+            background: var(--color-danger) !important;
         }
     }
     &:after {
-        content: "\f05a";
-        font-family: 'Font Awesome 5 Free';
+        content: "\f06a";
+        font-family: @font-family-icon;
+        font-weight: 900;
         position: absolute;
-        top: 17px;
-        right: 9px;
-        font-size: 20px;
-        color: #D33D3E;
+        top: 14px;
+        right: 6px;
+        font-size: @font-size-md;
+        color: var(--color-danger);
     }
 }
 
@@ -174,16 +218,18 @@ select.form-control {
         font-family: @font-family-icon;
         font-weight: 900;
         content: '\f002';
-        font-size: 15px;
+        font-size: 13px;
         position: absolute;
-        left: 2px;
-        top: 8px;
-        color: rgba(0, 0, 0, 0.5);
+        left: 4px;
+        top: 11px;
+        color: rgba(0, 0, 0, 0.45);
     }
 
     .ig-text {
-        padding-left: 25px;
-        .placeholder(rgba(0, 0, 0, 0.5))
+        padding-left: @space-6;
+        text-align: left;
+
+        &::placeholder { color: rgba(0, 0, 0, 0.45); }
     }
 }
 
@@ -192,16 +238,19 @@ select.form-control {
         font-family: @font-family-icon;
         font-weight: 900;
         content: '\f002';
-        font-size: 15px;
+        font-size: 13px;
         position: absolute;
-        left: 2px;
-        top: 8px;
-        color: rgba(255, 255, 255, 0.5);
+        left: 4px;
+        top: 11px;
+        color: rgba(255, 255, 255, 0.45);
+        z-index: 2;
     }
 
     .ig-text {
-        padding-left: 25px;
-        .placeholder(rgba(255, 255, 255, 0.5))
+        padding-left: @space-6;
+        text-align: left;
+
+        &::placeholder { color: rgba(255, 255, 255, 0.45); }
     }
 }
 
@@ -210,9 +259,11 @@ select.form-control {
     Share Spinners
 ----------------------------*/
 .set-expire {
-    border: 1px solid @input-border;
-    margin: 35px 0 30px;
+    border: 1px solid var(--color-border);
+    border-radius: @radius-md;
+    margin: @space-8 0 @space-8;
     position: relative;
+    background-color: var(--color-surface);
 
     &:before {
         content: '';
@@ -226,7 +277,7 @@ select.form-control {
 }
 
 .set-expire-item {
-    padding: 9px 5px 3px;
+    padding: @space-2 @space-1 @space-1;
     position: relative;
     display: table-cell;
     width: 1%;
@@ -234,13 +285,15 @@ select.form-control {
     .user-select(none);
 
     &:not(:last-child) {
-        border-right: 1px solid @input-border;
+        border-right: 1px solid var(--color-border);
     }
 }
 
 .set-expire-title {
     font-size: 10px;
     text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
 }
 
 .set-expire-value {
@@ -251,33 +304,36 @@ select.form-control {
 
     input {
         .user-select(none);
-        font-size: 20px;
+        font-size: @font-size-xl;
         text-align: center;
         position: relative;
         right: -15px;
         border: 0;
-        color: @text-strong-color;
+        color: var(--color-text-strong);
         padding: 0;
-        height: 25px;
+        height: 28px;
         width: 100%;
-        font-weight: normal;
+        font-weight: @font-weight-medium;
+        background: transparent;
+        font-variant-numeric: tabular-nums;
     }
 }
 
 .set-expire-decrease,
 .set-expire-increase {
     position: absolute;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     background: url(../../img/arrow.svg) no-repeat center;
     background-size: 85%;
     left: 50%;
-    margin-left: -10px;
-    .opacity(0.2);
+    margin-left: -11px;
+    opacity: 0.25;
     cursor: pointer;
+    transition: opacity @duration-fast @ease-standard;
 
     &:hover {
-        .opacity(0.5);
+        opacity: 0.7;
     }
 }
 
@@ -287,5 +343,5 @@ select.form-control {
 
 .set-expire-decrease {
     bottom: -27px;
-    .rotate(-180deg);
+    transform: rotate(-180deg);
 }

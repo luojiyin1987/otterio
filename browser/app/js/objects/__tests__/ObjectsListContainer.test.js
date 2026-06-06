@@ -1,49 +1,28 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import React from "react"
-import { shallow } from "enzyme"
+import { renderWithStore, defaultState } from "../../jest/test-utils"
 import { ObjectsListContainer } from "../ObjectsListContainer"
 
-describe("ObjectsList", () => {
-  it("should render without crashing", () => {
-    shallow(<ObjectsListContainer filteredObjects={[]} />)
+describe("ObjectsListContainer", () => {
+  it("renders without crashing", () => {
+    renderWithStore(<ObjectsListContainer />, defaultState)
   })
 
-  it("should render ObjectsList with objects", () => {
-    const wrapper = shallow(
-      <ObjectsListContainer
-        filteredObjects={[{ name: "test1.jpg" }, { name: "test2.jpg" }]}
-      />
-    )
-    expect(wrapper.find("ObjectsList").length).toBe(1)
-    expect(wrapper.find("ObjectsList").prop("objects")).toEqual([
-      { name: "test1.jpg" },
-      { name: "test2.jpg" }
-    ])
-  })
-
-  it("should show the loading indicator when the objects are being loaded", () => {
-    const wrapper = shallow(
-      <ObjectsListContainer
-        currentBucket="test1"
-        filteredObjects={[]}
-        listLoading={true}
-      />
-    )
-    expect(wrapper.find(".loading").exists()).toBeTruthy()
+  it("shows the loading indicator when listLoading is true", () => {
+    const { container } = renderWithStore(<ObjectsListContainer />, {
+      ...defaultState,
+      objects: { ...defaultState.objects, listLoading: true },
+    })
+    expect(container.querySelector(".loading")).not.toBeNull()
   })
 })

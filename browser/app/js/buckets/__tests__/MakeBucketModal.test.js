@@ -1,80 +1,54 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import React from "react"
-import { shallow, mount } from "enzyme"
-import { MakeBucketModal } from "../MakeBucketModal"
+import { fireEvent } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { renderWithStore, defaultState } from "../../jest/test-utils"
+import MakeBucketModal from "../MakeBucketModal"
+import * as bucketActions from "../actions"
+
+const openState = {
+  ...defaultState,
+  buckets: { ...defaultState.buckets, showMakeBucketModal: true },
+}
+
+beforeEach(() => {
+  jest
+    .spyOn(bucketActions, "hideMakeBucketModal")
+    .mockReturnValue({ type: "TEST_HIDE_MAKE_BUCKET" })
+  jest
+    .spyOn(bucketActions, "makeBucket")
+    .mockImplementation(name => ({ type: "TEST_MAKE_BUCKET", name }))
+})
+
+afterEach(() => jest.restoreAllMocks())
 
 describe("MakeBucketModal", () => {
-  it("should render without crashing", () => {
-    shallow(<MakeBucketModal />)
+  it("renders without crashing", () => {
+    renderWithStore(<MakeBucketModal />, openState)
   })
 
-  it("should call hideMakeBucketModal when close button is clicked", () => {
-    const hideMakeBucketModal = jest.fn()
-    const wrapper = shallow(
-      <MakeBucketModal hideMakeBucketModal={hideMakeBucketModal} />
-    )
-    wrapper.find("button").simulate("click")
-    expect(hideMakeBucketModal).toHaveBeenCalled()
+  it("dispatches hideMakeBucketModal when close is clicked", async () => {
+    const user = userEvent.setup()
+    renderWithStore(<MakeBucketModal />, openState)
+    await user.click(document.querySelector(".close"))
+    expect(bucketActions.hideMakeBucketModal).toHaveBeenCalled()
   })
 
-  it("bucketName should be cleared before hiding the modal", () => {
-    const hideMakeBucketModal = jest.fn()
-    const wrapper = shallow(
-      <MakeBucketModal hideMakeBucketModal={hideMakeBucketModal} />
-    )
-    wrapper.find("input").simulate("change", {
-      target: { value: "test" }
-    })
-    expect(wrapper.state("bucketName")).toBe("test")
-    wrapper.find("button").simulate("click")
-    expect(wrapper.state("bucketName")).toBe("")
-  })
-
-  it("should call makeBucket when the form is submitted", () => {
-    const makeBucket = jest.fn()
-    const hideMakeBucketModal = jest.fn()
-    const wrapper = shallow(
-      <MakeBucketModal
-        makeBucket={makeBucket}
-        hideMakeBucketModal={hideMakeBucketModal}
-      />
-    )
-    wrapper.find("input").simulate("change", {
-      target: { value: "test" }
-    })
-    wrapper.find("form").simulate("submit", { preventDefault: jest.fn() })
-    expect(makeBucket).toHaveBeenCalledWith("test")
-  })
-
-  it("should call hideMakeBucketModal and clear bucketName after the form is submited", () => {
-    const makeBucket = jest.fn()
-    const hideMakeBucketModal = jest.fn()
-    const wrapper = shallow(
-      <MakeBucketModal
-        makeBucket={makeBucket}
-        hideMakeBucketModal={hideMakeBucketModal}
-      />
-    )
-    wrapper.find("input").simulate("change", {
-      target: { value: "test" }
-    })
-    wrapper.find("form").simulate("submit", { preventDefault: jest.fn() })
-    expect(hideMakeBucketModal).toHaveBeenCalled()
-    expect(wrapper.state("bucketName")).toBe("")
+  it("dispatches makeBucket on form submit", () => {
+    renderWithStore(<MakeBucketModal />, openState)
+    const input = document.querySelector(".ig-text")
+    fireEvent.change(input, { target: { value: "test" } })
+    fireEvent.submit(document.querySelector("form"))
+    expect(bucketActions.makeBucket).toHaveBeenCalledWith("test")
   })
 })

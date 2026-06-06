@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { combineReducers } from "redux"
+import { combineReducers } from "@reduxjs/toolkit"
 import browser from "./browser/reducer"
 import alert from "./alert/reducer"
 import buckets from "./buckets/reducer"
@@ -26,7 +26,7 @@ const rootReducer = combineReducers({
   alert,
   buckets,
   objects,
-  uploads
+  uploads,
 })
 
 export default rootReducer

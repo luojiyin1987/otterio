@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-import { createSelector } from "reselect"
+import { createSelector } from "@reduxjs/toolkit"
 
 export const getServerInfo = state => state.browser.serverInfo
 
-export const hasServerPublicDomain = createSelector(
-  getServerInfo,
-  serverInfo => Boolean(serverInfo.info && serverInfo.info.domains && serverInfo.info.domains.length),
+export const hasServerPublicDomain = createSelector(getServerInfo, serverInfo =>
+  Boolean(
+    serverInfo.info && serverInfo.info.domains && serverInfo.info.domains.length
+  )
 )

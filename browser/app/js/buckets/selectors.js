@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { createSelector } from "reselect"
+import { createSelector } from "@reduxjs/toolkit"
 
 const bucketsSelector = state => state.buckets.list
 const bucketsFilterSelector = state => state.buckets.filter
@@ -22,8 +22,10 @@ const bucketsFilterSelector = state => state.buckets.filter
 export const getFilteredBuckets = createSelector(
   bucketsSelector,
   bucketsFilterSelector,
-  (buckets, filter) => buckets.filter(
-    bucket => bucket.toLowerCase().indexOf(filter.toLowerCase()) > -1)
+  (buckets, filter) =>
+    buckets.filter(
+      bucket => bucket.toLowerCase().indexOf(filter.toLowerCase()) > -1
+    )
 )
 
 export const getCurrentBucket = state => state.buckets.currentBucket

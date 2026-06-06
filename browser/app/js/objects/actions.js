@@ -1,17 +1,12 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import web from "../web"
@@ -23,7 +18,10 @@ import {
 } from "../utils"
 import { getCurrentBucket } from "../buckets/selectors"
 import { getCurrentPrefix, getCheckedList } from "./selectors"
-import * as alertActions from "../alert/actions"
+import {
+  dispatchAlertError,
+  dispatchAlertSuccess,
+} from "../utils/alertDispatch"
 import {
   otterioBrowserPrefix,
   SORT_BY_NAME,
@@ -32,7 +30,7 @@ import {
   SORT_ORDER_ASC,
   SORT_ORDER_DESC,
 } from "../constants"
-import { getServerInfo, hasServerPublicDomain } from '../browser/selectors'
+import { getServerInfo, hasServerPublicDomain } from "../browser/selectors"
 
 export const SET_LIST = "objects/SET_LIST"
 export const RESET_LIST = "objects/RESET_LIST"
@@ -49,7 +47,7 @@ export const CHECKED_LIST_REMOVE = "objects/CHECKED_LIST_REMOVE"
 export const CHECKED_LIST_RESET = "objects/CHECKED_LIST_RESET"
 export const SET_LIST_LOADING = "objects/SET_LIST_LOADING"
 
-export const setList = (objects) => ({
+export const setList = objects => ({
   type: SET_LIST,
   objects,
 })
@@ -58,14 +56,12 @@ export const resetList = () => ({
   type: RESET_LIST,
 })
 
-export const setFilter = filter => {
-  return {
-    type: SET_FILTER,
-    filter
-  }
-}
+export const setFilter = filter => ({
+  type: SET_FILTER,
+  filter,
+})
 
-export const setListLoading = (listLoading) => ({
+export const setListLoading = listLoading => ({
   type: SET_LIST_LOADING,
   listLoading,
 })
@@ -84,7 +80,7 @@ export const fetchObjects = () => {
           bucketName: currentBucket,
           prefix: currentPrefix,
         })
-        .then((res) => {
+        .then(res => {
           // we need to check if the bucket name and prefix are the same as
           // when the request was made before updating the displayed objects
           if (
@@ -93,12 +89,10 @@ export const fetchObjects = () => {
           ) {
             let objects = []
             if (res.objects) {
-              objects = res.objects.map((object) => {
-                return {
-                  ...object,
-                  name: object.name.replace(currentPrefix, ""),
-                }
-              })
+              objects = res.objects.map(object => ({
+                ...object,
+                name: object.name.replace(currentPrefix, ""),
+              }))
             }
 
             const sortBy = SORT_BY_LAST_MODIFIED
@@ -112,15 +106,9 @@ export const fetchObjects = () => {
             dispatch(setListLoading(false))
           }
         })
-        .catch((err) => {
+        .catch(err => {
           if (web.LoggedIn()) {
-            dispatch(
-              alertActions.set({
-                type: "danger",
-                message: err.message,
-                autoClear: true,
-              })
-            )
+            dispatchAlertError(dispatch, err, { autoClear: true })
             dispatch(resetList())
           } else {
             history.push("/login")
@@ -131,7 +119,7 @@ export const fetchObjects = () => {
   }
 }
 
-export const sortObjects = (sortBy) => {
+export const sortObjects = sortBy => {
   return function (dispatch, getState) {
     const { objects } = getState()
     let sortOrder = SORT_ORDER_ASC
@@ -157,17 +145,17 @@ const sortObjectsList = (list, sortBy, sortOrder) => {
   }
 }
 
-export const setSortBy = (sortBy) => ({
+export const setSortBy = sortBy => ({
   type: SET_SORT_BY,
   sortBy,
 })
 
-export const setSortOrder = (sortOrder) => ({
+export const setSortOrder = sortOrder => ({
   type: SET_SORT_ORDER,
   sortOrder,
 })
 
-export const selectPrefix = (prefix) => {
+export const selectPrefix = prefix => {
   return function (dispatch, getState) {
     dispatch(setCurrentPrefix(prefix))
     dispatch(fetchObjects())
@@ -177,19 +165,17 @@ export const selectPrefix = (prefix) => {
   }
 }
 
-export const setCurrentPrefix = (prefix) => {
-  return {
-    type: SET_CURRENT_PREFIX,
-    prefix,
-  }
-}
+export const setCurrentPrefix = prefix => ({
+  type: SET_CURRENT_PREFIX,
+  prefix,
+})
 
-export const setPrefixWritable = (prefixWritable) => ({
+export const setPrefixWritable = prefixWritable => ({
   type: SET_PREFIX_WRITABLE,
   prefixWritable,
 })
 
-export const deleteObject = (object) => {
+export const deleteObject = object => {
   return function (dispatch, getState) {
     const currentBucket = getCurrentBucket(getState())
     const currentPrefix = getCurrentPrefix(getState())
@@ -202,18 +188,11 @@ export const deleteObject = (object) => {
       .then(() => {
         dispatch(removeObject(object))
       })
-      .catch((e) => {
-        dispatch(
-          alertActions.set({
-            type: "danger",
-            message: e.message,
-          })
-        )
-      })
+      .catch(err => dispatchAlertError(dispatch, err))
   }
 }
 
-export const removeObject = (object) => ({
+export const removeObject = object => ({
   type: REMOVE,
   object,
 })
@@ -240,61 +219,37 @@ export const shareObject = (object, days, hours, minutes) => {
         .GetBucketPolicy({ bucketName: currentBucket, prefix: currentPrefix })
         .catch(() => ({ policy: null }))
         .then(({ policy }) => {
-          if (hasServerDomain && ['readonly', 'readwrite'].includes(policy)) {
+          if (hasServerDomain && ["readonly", "readwrite"].includes(policy)) {
             const domain = getServerInfo(getState()).info.domains[0]
             const url = `${domain}/${currentBucket}/${encodeURI(objectName)}`
             dispatch(showShareObject(object, url, false))
-            dispatch(
-              alertActions.set({
-                type: "success",
-                message: "Object shared."
-              })
-            )
+            dispatchAlertSuccess(dispatch, "Object shared.")
           } else {
-            return web
-              .PresignedGet({
-                host: location.host,
-                bucket: currentBucket,
-                object: objectName,
-                expiry: expiry
-              })
+            return web.PresignedGet({
+              host: location.host,
+              bucket: currentBucket,
+              object: objectName,
+              expiry,
+            })
           }
         })
-        .then((obj) => {
+        .then(obj => {
           if (!obj) return
           dispatch(showShareObject(object, obj.url))
-          dispatch(
-            alertActions.set({
-              type: "success",
-              message: `Object shared. Expires in ${days} days ${hours} hours ${minutes} minutes`,
-            })
+          dispatchAlertSuccess(
+            dispatch,
+            `Object shared. Expires in ${days} days ${hours} hours ${minutes} minutes`
           )
         })
-        .catch((err) => {
-          dispatch(
-            alertActions.set({
-              type: "danger",
-              message: err.message,
-            })
-          )
-        })
+        .catch(err => dispatchAlertError(dispatch, err))
     } else {
       dispatch(
         showShareObject(
           object,
-          `${location.host}` +
-            "/" +
-            `${currentBucket}` +
-            "/" +
-            encodeURI(objectName)
+          `${location.host}/${currentBucket}/${encodeURI(objectName)}`
         )
       )
-      dispatch(
-        alertActions.set({
-          type: "success",
-          message: `Object shared.`,
-        })
-      )
+      dispatchAlertSuccess(dispatch, "Object shared.")
     }
   }
 }
@@ -307,12 +262,13 @@ export const showShareObject = (object, url, showExpiryDate = true) => ({
   showExpiryDate,
 })
 
-export const hideShareObject = (object, url) => ({
+export const hideShareObject = () => ({
   type: SET_SHARE_OBJECT,
   show: false,
   object: "",
   url: "",
 })
+
 export const getObjectURL = (object, callback) => {
   return function (dispatch, getState) {
     const currentBucket = getCurrentBucket(getState())
@@ -322,25 +278,19 @@ export const getObjectURL = (object, callback) => {
     if (web.LoggedIn()) {
       return web
         .CreateURLToken()
-        .then((res) => {
+        .then(res => {
           const url = `${window.location.origin}${otterioBrowserPrefix}/download/${currentBucket}/${encObjectName}?token=${res.token}`
           callback(url)
         })
-        .catch((err) => {
-          dispatch(
-            alertActions.set({
-              type: "danger",
-              message: err.message,
-            })
-          )
-        })
+        .catch(err => dispatchAlertError(dispatch, err))
     } else {
       const url = `${window.location.origin}${otterioBrowserPrefix}/download/${currentBucket}/${encObjectName}?token=`
       callback(url)
     }
   }
 }
-export const downloadObject = (object) => {
+
+export const downloadObject = object => {
   return function (dispatch, getState) {
     const currentBucket = getCurrentBucket(getState())
     const currentPrefix = getCurrentPrefix(getState())
@@ -349,18 +299,11 @@ export const downloadObject = (object) => {
     if (web.LoggedIn()) {
       return web
         .CreateURLToken()
-        .then((res) => {
+        .then(res => {
           const url = `${window.location.origin}${otterioBrowserPrefix}/download/${currentBucket}/${encObjectName}?token=${res.token}`
           window.location = url
         })
-        .catch((err) => {
-          dispatch(
-            alertActions.set({
-              type: "danger",
-              message: err.message,
-            })
-          )
-        })
+        .catch(err => dispatchAlertError(dispatch, err))
     } else {
       const url = `${window.location.origin}${otterioBrowserPrefix}/download/${currentBucket}/${encObjectName}?token=`
       window.location = url
@@ -368,7 +311,7 @@ export const downloadObject = (object) => {
   }
 }
 
-export const downloadPrefix = (object) => {
+export const downloadPrefix = object => {
   return function (dispatch, getState) {
     return downloadObjects(
       getCurrentBucket(getState()),
@@ -380,13 +323,12 @@ export const downloadPrefix = (object) => {
   }
 }
 
-
-export const checkObject = (object) => ({
+export const checkObject = object => ({
   type: CHECKED_LIST_ADD,
   object,
 })
 
-export const uncheckObject = (object) => ({
+export const uncheckObject = object => ({
   type: CHECKED_LIST_REMOVE,
   object,
 })
@@ -408,51 +350,39 @@ export const downloadCheckedObjects = () => {
 }
 
 const downloadObjects = (bucketName, prefix, objects, filename, dispatch) => {
-    const req = {
-      bucketName: bucketName,
-      prefix: prefix,
-      objects: objects,
-    }
-    if (web.LoggedIn()) {
-      return web
-        .CreateURLToken()
-        .then((res) => {
-          const requestUrl = `${location.origin}${otterioBrowserPrefix}/zip?token=${res.token}`
-          downloadZip(requestUrl, req, filename, dispatch)
-        })
-        .catch((err) =>
-          dispatch(
-            alertActions.set({
-              type: "danger",
-              message: err.message,
-            })
-          )
-        )
-    } else {
-      const requestUrl = `${location.origin}${otterioBrowserPrefix}/zip?token=`
-      downloadZip(requestUrl, req, filename, dispatch)
-    }
+  const req = { bucketName, prefix, objects }
+  if (web.LoggedIn()) {
+    return web
+      .CreateURLToken()
+      .then(res => {
+        const requestUrl = `${location.origin}${otterioBrowserPrefix}/zip?token=${res.token}`
+        downloadZip(requestUrl, req, filename, dispatch)
+      })
+      .catch(err => dispatchAlertError(dispatch, err))
+  } else {
+    const requestUrl = `${location.origin}${otterioBrowserPrefix}/zip?token=`
+    downloadZip(requestUrl, req, filename, dispatch)
+  }
 }
 
 const downloadZip = (url, req, filename, dispatch) => {
-  var anchor = document.createElement("a")
+  const anchor = document.createElement("a")
   document.body.appendChild(anchor)
 
-  var xhr = new XMLHttpRequest()
+  const xhr = new XMLHttpRequest()
   xhr.open("POST", url, true)
   xhr.responseType = "blob"
 
-  xhr.onload = function (e) {
-    if (this.status == 200) {
+  xhr.onload = function () {
+    if (this.status === 200) {
       dispatch(resetCheckedList())
-      var blob = new Blob([this.response], {
-        type: "octet/stream",
-      })
-      var blobUrl = window.URL.createObjectURL(blob)
-      var separator = req.prefix.length > 1 ? "-" : ""
+      const blob = new Blob([this.response], { type: "octet/stream" })
+      const blobUrl = window.URL.createObjectURL(blob)
+      const separator = req.prefix.length > 1 ? "-" : ""
 
       anchor.href = blobUrl
-      anchor.download = filename ||
+      anchor.download =
+        filename ||
         req.bucketName + separator + req.prefix.slice(0, -1) + ".zip"
 
       anchor.click()

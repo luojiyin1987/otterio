@@ -1,57 +1,60 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import React from "react"
-import { shallow } from "enzyme"
+import { renderWithStore, defaultState } from "../../jest/test-utils"
+import BucketList from "../BucketList"
+import * as bucketActions from "../actions"
 import history from "../../history"
-import { BucketList } from "../BucketList"
 
 jest.mock("../../web", () => ({
-  LoggedIn: jest
-    .fn(() => false)
-    .mockReturnValueOnce(true)
-    .mockReturnValueOnce(true)
+  LoggedIn: jest.fn(() => true),
 }))
 
+const web = require("../../web")
+
+beforeEach(() => {
+  jest
+    .spyOn(bucketActions, "fetchBuckets")
+    .mockReturnValue({ type: "TEST_FETCH_BUCKETS" })
+  jest
+    .spyOn(bucketActions, "setList")
+    .mockImplementation(list => ({ type: "TEST_SET_LIST", list }))
+  jest
+    .spyOn(bucketActions, "selectBucket")
+    .mockImplementation((bucket, prefix) => ({
+      type: "TEST_SELECT_BUCKET",
+      bucket,
+      prefix,
+    }))
+})
+
+afterEach(() => jest.restoreAllMocks())
+
 describe("BucketList", () => {
-  it("should render without crashing", () => {
-    const fetchBuckets = jest.fn()
-    shallow(<BucketList filteredBuckets={[]} fetchBuckets={fetchBuckets} />)
+  it("renders without crashing", () => {
+    renderWithStore(<BucketList />, defaultState)
   })
 
-  it("should call fetchBuckets before component is mounted", () => {
-    const fetchBuckets = jest.fn()
-    const wrapper = shallow(
-      <BucketList filteredBuckets={[]} fetchBuckets={fetchBuckets} />
-    )
-    expect(fetchBuckets).toHaveBeenCalled()
+  it("dispatches fetchBuckets on mount when logged in", () => {
+    web.LoggedIn.mockReturnValue(true)
+    renderWithStore(<BucketList />, defaultState)
+    expect(bucketActions.fetchBuckets).toHaveBeenCalled()
   })
 
-  it("should call setBucketList and selectBucket before component is mounted when the user has not loggedIn", () => {
-    const setBucketList = jest.fn()
-    const selectBucket = jest.fn()
+  it("seeds the bucket list from the URL when not logged in", () => {
+    web.LoggedIn.mockReturnValue(false)
     history.push("/bk1/pre1")
-    const wrapper = shallow(
-      <BucketList
-        filteredBuckets={[]}
-        setBucketList={setBucketList}
-        selectBucket={selectBucket}
-      />
-    )
-    expect(setBucketList).toHaveBeenCalledWith(["bk1"])
-    expect(selectBucket).toHaveBeenCalledWith("bk1", "pre1")
+    renderWithStore(<BucketList />, defaultState)
+    expect(bucketActions.setList).toHaveBeenCalledWith(["bk1"])
+    expect(bucketActions.selectBucket).toHaveBeenCalledWith("bk1", "pre1")
   })
 })

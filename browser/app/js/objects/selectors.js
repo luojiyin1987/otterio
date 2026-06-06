@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { createSelector } from "reselect"
+import { createSelector } from "@reduxjs/toolkit"
 
 export const getCurrentPrefix = state => state.objects.currentPrefix
 
@@ -28,6 +28,8 @@ const objectsFilterSelector = state => state.objects.filter
 export const getFilteredObjects = createSelector(
   objectsSelector,
   objectsFilterSelector,
-  (objects, filter) => objects.filter(
-    object => object.name.toLowerCase().startsWith(filter.toLowerCase()))
+  (objects, filter) =>
+    objects.filter(object =>
+      object.name.toLowerCase().startsWith(filter.toLowerCase())
+    )
 )

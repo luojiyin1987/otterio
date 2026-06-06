@@ -23,7 +23,7 @@ import {
   SORT_BY_SIZE,
   SORT_BY_LAST_MODIFIED,
   SORT_ORDER_DESC,
-  SORT_ORDER_ASC
+  SORT_ORDER_ASC,
 } from "../constants"
 
 export const ObjectsHeader = ({
@@ -31,7 +31,7 @@ export const ObjectsHeader = ({
   sortedBySize,
   sortedByLastModified,
   sortOrder,
-  sortObjects
+  sortObjects,
 }) => (
   <div className="feb-container">
     <header className="fesl-row" data-type="folder">
@@ -48,8 +48,9 @@ export const ObjectsHeader = ({
             "fesli-sort": true,
             "fesli-sort--active": sortedByName,
             fas: true,
-            "fa-sort-alpha-down-alt": sortedByName && sortOrder === SORT_ORDER_DESC,
-            "fa-sort-alpha-down": sortedByName && sortOrder === SORT_ORDER_ASC
+            "fa-sort-alpha-down-alt":
+              sortedByName && sortOrder === SORT_ORDER_DESC,
+            "fa-sort-alpha-down": sortedByName && sortOrder === SORT_ORDER_ASC,
           })}
         />
       </div>
@@ -67,7 +68,8 @@ export const ObjectsHeader = ({
             fas: true,
             "fa-sort-amount-down":
               sortedBySize && sortOrder === SORT_ORDER_DESC,
-            "fa-sort-amount-down-alt": sortedBySize && sortOrder === SORT_ORDER_ASC
+            "fa-sort-amount-down-alt":
+              sortedBySize && sortOrder === SORT_ORDER_ASC,
           })}
         />
       </div>
@@ -86,7 +88,7 @@ export const ObjectsHeader = ({
             "fa-sort-numeric-down-alt":
               sortedByLastModified && sortOrder === SORT_ORDER_DESC,
             "fa-sort-numeric-down":
-              sortedByLastModified && sortOrder === SORT_ORDER_ASC
+              sortedByLastModified && sortOrder === SORT_ORDER_ASC,
           })}
         />
       </div>
@@ -100,17 +102,14 @@ const mapStateToProps = state => {
     sortedByName: state.objects.sortBy == SORT_BY_NAME,
     sortedBySize: state.objects.sortBy == SORT_BY_SIZE,
     sortedByLastModified: state.objects.sortBy == SORT_BY_LAST_MODIFIED,
-    sortOrder: state.objects.sortOrder
+    sortOrder: state.objects.sortOrder,
   }
 }
 
 const mapDispatchToProps = dispatch => {
   return {
-    sortObjects: sortBy => dispatch(actionsObjects.sortObjects(sortBy))
+    sortObjects: sortBy => dispatch(actionsObjects.sortObjects(sortBy)),
   }
 }
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(ObjectsHeader)
+export default connect(mapStateToProps, mapDispatchToProps)(ObjectsHeader)

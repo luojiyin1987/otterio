@@ -21,8 +21,8 @@ describe("getFilteredBuckets", () => {
   beforeEach(() => {
     state = {
       buckets: {
-        list: ["test1", "test11", "test2"]
-      }
+        list: ["test1", "test11", "test2"],
+      },
     }
   })
 

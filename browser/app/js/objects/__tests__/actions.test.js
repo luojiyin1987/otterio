@@ -23,7 +23,7 @@ import {
   SORT_BY_NAME,
   SORT_ORDER_ASC,
   SORT_BY_LAST_MODIFIED,
-  SORT_ORDER_DESC
+  SORT_ORDER_DESC,
 } from "../../constants"
 import history from "../../history"
 
@@ -39,12 +39,12 @@ jest.mock("../../web", () => ({
   ListObjects: jest.fn(({ bucketName }) => {
     if (bucketName === "test-deny") {
       return Promise.reject({
-        message: "listobjects is denied"
+        message: "listobjects is denied",
       })
     } else {
       return Promise.resolve({
         objects: [{ name: "test1" }, { name: "test2" }],
-        writable: false
+        writable: false,
       })
     }
   }),
@@ -78,9 +78,10 @@ jest.mock("../../web", () => ({
     if (!bucketName) {
       return Promise.reject({ message: "Invalid bucket" })
     }
-    if (bucketName === 'test-public') return Promise.resolve({ policy: 'readonly' })
+    if (bucketName === "test-public")
+      return Promise.resolve({ policy: "readonly" })
     return Promise.resolve({})
-  })
+  }),
 }))
 
 const middlewares = [thunk]
@@ -92,8 +93,8 @@ describe("Objects actions", () => {
     const expectedActions = [
       {
         type: "objects/SET_LIST",
-        objects: [{ name: "test1" }, { name: "test2" }]
-      }
+        objects: [{ name: "test1" }, { name: "test2" }],
+      },
     ]
     store.dispatch(
       actionsObjects.setList([{ name: "test1" }, { name: "test2" }])
@@ -107,8 +108,8 @@ describe("Objects actions", () => {
     const expectedActions = [
       {
         type: "objects/SET_SORT_BY",
-        sortBy: SORT_BY_NAME
-      }
+        sortBy: SORT_BY_NAME,
+      },
     ]
     store.dispatch(actionsObjects.setSortBy(SORT_BY_NAME))
     const actions = store.getActions()
@@ -120,8 +121,8 @@ describe("Objects actions", () => {
     const expectedActions = [
       {
         type: "objects/SET_SORT_ORDER",
-        sortOrder: SORT_ORDER_ASC
-      }
+        sortOrder: SORT_ORDER_ASC,
+      },
     ]
     store.dispatch(actionsObjects.setSortOrder(SORT_ORDER_ASC))
     const actions = store.getActions()
@@ -131,30 +132,30 @@ describe("Objects actions", () => {
   it("creates objects/SET_LIST after fetching the objects", () => {
     const store = mockStore({
       buckets: { currentBucket: "bk1" },
-      objects: { currentPrefix: "" }
+      objects: { currentPrefix: "" },
     })
     const expectedActions = [
       {
-        type: "objects/RESET_LIST"
+        type: "objects/RESET_LIST",
       },
       { listLoading: true, type: "objects/SET_LIST_LOADING" },
       {
         type: "objects/SET_SORT_BY",
-        sortBy: SORT_BY_LAST_MODIFIED
+        sortBy: SORT_BY_LAST_MODIFIED,
       },
       {
         type: "objects/SET_SORT_ORDER",
-        sortOrder: SORT_ORDER_DESC
+        sortOrder: SORT_ORDER_DESC,
       },
       {
         type: "objects/SET_LIST",
-        objects: [{ name: "test2" }, { name: "test1" }]
+        objects: [{ name: "test2" }, { name: "test1" }],
       },
       {
         type: "objects/SET_PREFIX_WRITABLE",
-        prefixWritable: false
+        prefixWritable: false,
       },
-      { listLoading: false, type: "objects/SET_LIST_LOADING" }
+      { listLoading: false, type: "objects/SET_LIST_LOADING" },
     ]
     return store.dispatch(actionsObjects.fetchObjects()).then(() => {
       const actions = store.getActions()
@@ -165,11 +166,11 @@ describe("Objects actions", () => {
   it("creates objects/RESET_LIST after failing to fetch the objects from bucket with ListObjects denied for LoggedIn users", () => {
     const store = mockStore({
       buckets: { currentBucket: "test-deny" },
-      objects: { currentPrefix: "" }
+      objects: { currentPrefix: "" },
     })
     const expectedActions = [
       {
-        type: "objects/RESET_LIST"
+        type: "objects/RESET_LIST",
       },
       { listLoading: true, type: "objects/SET_LIST_LOADING" },
       {
@@ -178,13 +179,13 @@ describe("Objects actions", () => {
           type: "danger",
           message: "listobjects is denied",
           id: alertActions.alertId,
-          autoClear: true
-        }
+          autoClear: true,
+        },
       },
       {
-        type: "objects/RESET_LIST"
+        type: "objects/RESET_LIST",
       },
-      { listLoading: false, type: "objects/SET_LIST_LOADING" }
+      { listLoading: false, type: "objects/SET_LIST_LOADING" },
     ]
     return store.dispatch(actionsObjects.fetchObjects()).then(() => {
       const actions = store.getActions()
@@ -195,7 +196,7 @@ describe("Objects actions", () => {
   it("redirect to login after failing to fetch the objects from bucket for non-LoggedIn users", () => {
     const store = mockStore({
       buckets: { currentBucket: "test-deny" },
-      objects: { currentPrefix: "" }
+      objects: { currentPrefix: "" },
     })
     return store.dispatch(actionsObjects.fetchObjects()).then(() => {
       expect(history.location.pathname.endsWith("/login")).toBeTruthy()
@@ -207,22 +208,22 @@ describe("Objects actions", () => {
       objects: {
         list: [],
         sortBy: "",
-        sortOrder: SORT_ORDER_ASC
-      }
+        sortOrder: SORT_ORDER_ASC,
+      },
     })
     const expectedActions = [
       {
         type: "objects/SET_SORT_BY",
-        sortBy: SORT_BY_NAME
+        sortBy: SORT_BY_NAME,
       },
       {
         type: "objects/SET_SORT_ORDER",
-        sortOrder: SORT_ORDER_ASC
+        sortOrder: SORT_ORDER_ASC,
       },
       {
         type: "objects/SET_LIST",
-        objects: []
-      }
+        objects: [],
+      },
     ]
     store.dispatch(actionsObjects.sortObjects(SORT_BY_NAME))
     const actions = store.getActions()
@@ -232,15 +233,15 @@ describe("Objects actions", () => {
   it("should update browser url and creates objects/SET_CURRENT_PREFIX and objects/CHECKED_LIST_RESET actions when selectPrefix is called", () => {
     const store = mockStore({
       buckets: { currentBucket: "test" },
-      objects: { currentPrefix: "" }
+      objects: { currentPrefix: "" },
     })
     const expectedActions = [
       { type: "objects/SET_CURRENT_PREFIX", prefix: "abc/" },
       {
-        type: "objects/RESET_LIST"
+        type: "objects/RESET_LIST",
       },
       { listLoading: true, type: "objects/SET_LIST_LOADING" },
-      { type: "objects/CHECKED_LIST_RESET" }
+      { type: "objects/CHECKED_LIST_RESET" },
     ]
     store.dispatch(actionsObjects.selectPrefix("abc/"))
     const actions = store.getActions()
@@ -251,7 +252,7 @@ describe("Objects actions", () => {
   it("create objects/SET_PREFIX_WRITABLE action", () => {
     const store = mockStore()
     const expectedActions = [
-      { type: "objects/SET_PREFIX_WRITABLE", prefixWritable: true }
+      { type: "objects/SET_PREFIX_WRITABLE", prefixWritable: true },
     ]
     store.dispatch(actionsObjects.setPrefixWritable(true))
     const actions = store.getActions()
@@ -269,7 +270,7 @@ describe("Objects actions", () => {
   it("creates objects/REMOVE action when object is deleted", () => {
     const store = mockStore({
       buckets: { currentBucket: "test" },
-      objects: { currentPrefix: "pre1/" }
+      objects: { currentPrefix: "pre1/" },
     })
     const expectedActions = [{ type: "objects/REMOVE", object: "obj1" }]
     store.dispatch(actionsObjects.deleteObject("obj1")).then(() => {
@@ -281,7 +282,7 @@ describe("Objects actions", () => {
   it("creates alert/SET action when invalid bucket is provided", () => {
     const store = mockStore({
       buckets: { currentBucket: "" },
-      objects: { currentPrefix: "pre1/" }
+      objects: { currentPrefix: "pre1/" },
     })
     const expectedActions = [
       {
@@ -289,9 +290,9 @@ describe("Objects actions", () => {
         alert: {
           type: "danger",
           message: "Invalid bucket",
-          id: alertActions.alertId
-        }
-      }
+          id: alertActions.alertId,
+        },
+      },
     ]
     return store.dispatch(actionsObjects.deleteObject("obj1")).then(() => {
       const actions = store.getActions()
@@ -307,8 +308,8 @@ describe("Objects actions", () => {
         show: true,
         object: "b.txt",
         url: "test",
-        showExpiryDate: true
-      }
+        showExpiryDate: true,
+      },
     ]
     store.dispatch(actionsObjects.showShareObject("b.txt", "test"))
     const actions = store.getActions()
@@ -322,8 +323,8 @@ describe("Objects actions", () => {
         type: "objects/SET_SHARE_OBJECT",
         show: false,
         object: "",
-        url: ""
-      }
+        url: "",
+      },
     ]
     store.dispatch(actionsObjects.hideShareObject())
     const actions = store.getActions()
@@ -342,16 +343,16 @@ describe("Objects actions", () => {
         show: true,
         object: "a.txt",
         url: "https://test.com/bk1/pre1/b.txt",
-        showExpiryDate: true
+        showExpiryDate: true,
       },
       {
         type: "alert/SET",
         alert: {
           type: "success",
           message: "Object shared. Expires in 1 days 0 hours 0 minutes",
-          id: alertActions.alertId
-        }
-      }
+          id: alertActions.alertId,
+        },
+      },
     ]
     return store
       .dispatch(actionsObjects.shareObject("a.txt", 1, 0, 0))
@@ -365,7 +366,7 @@ describe("Objects actions", () => {
     const store = mockStore({
       buckets: { currentBucket: "test-public" },
       objects: { currentPrefix: "pre1/" },
-      browser: { serverInfo: { info: { domains: ['public.com'] }} },
+      browser: { serverInfo: { info: { domains: ["public.com"] } } },
     })
     const expectedActions = [
       {
@@ -373,16 +374,16 @@ describe("Objects actions", () => {
         show: true,
         object: "a.txt",
         url: "public.com/test-public/pre1/a.txt",
-        showExpiryDate: false
+        showExpiryDate: false,
       },
       {
         type: "alert/SET",
         alert: {
           type: "success",
           message: "Object shared.",
-          id: alertActions.alertId
-        }
-      }
+          id: alertActions.alertId,
+        },
+      },
     ]
     return store
       .dispatch(actionsObjects.shareObject("a.txt", 1, 0, 0))
@@ -404,9 +405,9 @@ describe("Objects actions", () => {
         alert: {
           type: "danger",
           message: "Invalid bucket",
-          id: alertActions.alertId
-        }
-      }
+          id: alertActions.alertId,
+        },
+      },
     ]
     return store
       .dispatch(actionsObjects.shareObject("a.txt", 1, 0, 0))
@@ -425,13 +426,13 @@ describe("Objects actions", () => {
         },
         get() {
           return {
-            origin: "http://localhost:8080"
+            origin: "http://localhost:8080",
           }
-        }
+        },
       })
       const store = mockStore({
         buckets: { currentBucket: "bk1" },
-        objects: { currentPrefix: "pre1/" }
+        objects: { currentPrefix: "pre1/" },
       })
       store.dispatch(actionsObjects.downloadObject("obj1"))
       const url = `${
@@ -448,13 +449,13 @@ describe("Objects actions", () => {
         },
         get() {
           return {
-            origin: "http://localhost:8080"
+            origin: "http://localhost:8080",
           }
-        }
+        },
       })
       const store = mockStore({
         buckets: { currentBucket: "bk1" },
-        objects: { currentPrefix: "pre1/" }
+        objects: { currentPrefix: "pre1/" },
       })
       return store.dispatch(actionsObjects.downloadObject("obj1")).then(() => {
         const url = `${
@@ -469,7 +470,7 @@ describe("Objects actions", () => {
     it("create alert/SET action when CreateUrlToken fails", () => {
       const store = mockStore({
         buckets: { currentBucket: "bk1" },
-        objects: { currentPrefix: "pre1/" }
+        objects: { currentPrefix: "pre1/" },
       })
       const expectedActions = [
         {
@@ -477,9 +478,9 @@ describe("Objects actions", () => {
           alert: {
             type: "danger",
             message: "Error in creating token",
-            id: alertActions.alertId
-          }
-        }
+            id: alertActions.alertId,
+          },
+        },
       ]
       return store.dispatch(actionsObjects.downloadObject("obj1")).then(() => {
         const actions = store.getActions()
@@ -493,13 +494,13 @@ describe("Objects actions", () => {
     const send = jest.fn()
     const xhrMockClass = () => ({
       open: open,
-      send: send
+      send: send,
     })
     window.XMLHttpRequest = jest.fn().mockImplementation(xhrMockClass)
 
     const store = mockStore({
       buckets: { currentBucket: "bk1" },
-      objects: { currentPrefix: "pre1/" }
+      objects: { currentPrefix: "pre1/" },
     })
     return store.dispatch(actionsObjects.downloadPrefix("pre2/")).then(() => {
       const requestUrl = `${
@@ -510,7 +511,7 @@ describe("Objects actions", () => {
         JSON.stringify({
           bucketName: "bk1",
           prefix: "pre1/",
-          objects: ["pre2/"]
+          objects: ["pre2/"],
         })
       )
     })
@@ -521,8 +522,8 @@ describe("Objects actions", () => {
     const expectedActions = [
       {
         type: "objects/CHECKED_LIST_ADD",
-        object: "obj1"
-      }
+        object: "obj1",
+      },
     ]
     store.dispatch(actionsObjects.checkObject("obj1"))
     const actions = store.getActions()
@@ -534,8 +535,8 @@ describe("Objects actions", () => {
     const expectedActions = [
       {
         type: "objects/CHECKED_LIST_REMOVE",
-        object: "obj1"
-      }
+        object: "obj1",
+      },
     ]
     store.dispatch(actionsObjects.uncheckObject("obj1"))
     const actions = store.getActions()
@@ -546,8 +547,8 @@ describe("Objects actions", () => {
     const store = mockStore()
     const expectedActions = [
       {
-        type: "objects/CHECKED_LIST_RESET"
-      }
+        type: "objects/CHECKED_LIST_RESET",
+      },
     ]
     store.dispatch(actionsObjects.resetCheckedList())
     const actions = store.getActions()
@@ -559,13 +560,13 @@ describe("Objects actions", () => {
     const send = jest.fn()
     const xhrMockClass = () => ({
       open: open,
-      send: send
+      send: send,
     })
     window.XMLHttpRequest = jest.fn().mockImplementation(xhrMockClass)
 
     const store = mockStore({
       buckets: { currentBucket: "bk1" },
-      objects: { currentPrefix: "pre1/", checkedList: ["obj1"] }
+      objects: { currentPrefix: "pre1/", checkedList: ["obj1"] },
     })
     return store.dispatch(actionsObjects.downloadCheckedObjects()).then(() => {
       const requestUrl = `${
@@ -576,7 +577,7 @@ describe("Objects actions", () => {
         JSON.stringify({
           bucketName: "bk1",
           prefix: "pre1/",
-          objects: ["obj1"]
+          objects: ["obj1"],
         })
       )
     })

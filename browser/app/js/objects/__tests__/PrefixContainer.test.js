@@ -1,62 +1,60 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import React from "react"
-import { shallow } from "enzyme"
-import { PrefixContainer } from "../PrefixContainer"
+import userEvent from "@testing-library/user-event"
+import { renderWithStore, defaultState } from "../../jest/test-utils"
+import PrefixContainer from "../PrefixContainer"
+import * as objectsActions from "../actions"
+
+beforeEach(() => {
+  jest
+    .spyOn(objectsActions, "selectPrefix")
+    .mockImplementation(prefix => ({ type: "TEST_SELECT_PREFIX", prefix }))
+})
+
+afterEach(() => jest.restoreAllMocks())
 
 describe("PrefixContainer", () => {
-  it("should render without crashing", () => {
-    shallow(<PrefixContainer object={{ name: "abc/" }} />)
+  it("renders the prefix name", () => {
+    const { container } = renderWithStore(
+      <PrefixContainer object={{ name: "abc/" }} />,
+      defaultState
+    )
+    expect(container.textContent).toContain("abc/")
   })
 
-  it("should render ObjectItem with props", () => {
-    const wrapper = shallow(<PrefixContainer object={{ name: "abc/" }} />)
-    expect(wrapper.find("Connect(ObjectItem)").length).toBe(1)
-    expect(wrapper.find("Connect(ObjectItem)").prop("name")).toBe("abc/")
+  it("dispatches selectPrefix on click", async () => {
+    const user = userEvent.setup()
+    const { container } = renderWithStore(<PrefixContainer object={{ name: "abc/" }} />, {
+      ...defaultState,
+      objects: { ...defaultState.objects, currentPrefix: "xyz/" },
+    })
+    await user.click(container.querySelector("a"))
+    expect(objectsActions.selectPrefix).toHaveBeenCalledWith("xyz/abc/")
   })
 
-  it("should call selectPrefix when the prefix is clicked", () => {
-    const selectPrefix = jest.fn()
-    const wrapper = shallow(
-      <PrefixContainer
-        object={{ name: "abc/" }}
-        currentPrefix={"xyz/"}
-        selectPrefix={selectPrefix}
-      />
+  it("renders PrefixActions when nothing is checked", () => {
+    const { container } = renderWithStore(
+      <PrefixContainer object={{ name: "abc/" }} />,
+      defaultState
     )
-    wrapper.find("Connect(ObjectItem)").prop("onClick")()
-    expect(selectPrefix).toHaveBeenCalledWith("xyz/abc/")
+    expect(container.querySelector(".fia-toggle")).not.toBeNull()
   })
 
-  it("should pass actions to ObjectItem", () => {
-    const wrapper = shallow(
-      <PrefixContainer object={{ name: "abc/" }} checkedObjectsCount={0} />
-    )
-    expect(wrapper.find("Connect(ObjectItem)").prop("actionButtons")).not.toBe(
-      undefined
-    )
-  })
-
-  it("should pass empty actions to ObjectItem when checkedObjectCount is more than 0", () => {
-    const wrapper = shallow(
-      <PrefixContainer object={{ name: "abc/" }} checkedObjectsCount={1} />
-    )
-    expect(wrapper.find("Connect(ObjectItem)").prop("actionButtons")).toBe(
-      undefined
-    )
+  it("does not render PrefixActions when some objects are checked", () => {
+    const { container } = renderWithStore(<PrefixContainer object={{ name: "abc/" }} />, {
+      ...defaultState,
+      objects: { ...defaultState.objects, checkedList: ["x"] },
+    })
+    expect(container.querySelector(".fia-toggle")).toBeNull()
   })
 })

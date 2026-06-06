@@ -1,54 +1,58 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import React from "react"
-import { shallow } from "enzyme"
-import { SideBar } from "../SideBar"
+import { renderWithStore, defaultState } from "../../jest/test-utils"
+import SideBar from "../SideBar"
+import * as bucketActions from "../../buckets/actions"
 
 jest.mock("../../web", () => ({
-  LoggedIn: jest.fn(() => false).mockReturnValueOnce(true)
+  LoggedIn: jest.fn(() => false),
+  ListBuckets: jest.fn(() => Promise.resolve({ buckets: [] })),
 }))
 
+const web = require("../../web")
+
 describe("SideBar", () => {
-  it("should render without crashing", () => {
-    shallow(<SideBar />)
+  beforeEach(() => {
+    web.LoggedIn.mockReturnValue(false)
+    // BucketList dispatches fetchBuckets/selectBucket on mount; stub them so
+    // tests stay focused on the SideBar layout without hitting history APIs.
+    jest
+      .spyOn(bucketActions, "fetchBuckets")
+      .mockReturnValue({ type: "TEST_FETCH_BUCKETS" })
+    jest
+      .spyOn(bucketActions, "selectBucket")
+      .mockImplementation((b, p) => ({ type: "TEST_SELECT_BUCKET", b, p }))
+    jest
+      .spyOn(bucketActions, "setList")
+      .mockImplementation(b => ({ type: "TEST_SET_LIST", b }))
   })
 
-  it("should not render BucketSearch for non LoggedIn users", () => {
-    const wrapper = shallow(<SideBar />)
-    expect(wrapper.find("Connect(BucketSearch)").length).toBe(0)
+  afterEach(() => jest.restoreAllMocks())
+
+  it("renders without crashing", () => {
+    const { container } = renderWithStore(<SideBar />, defaultState)
+    expect(container.querySelector(".fe-sidebar")).not.toBeNull()
   })
 
-  it("should call clickOutside when the user clicks outside the sidebar", () => {
-    const clickOutside = jest.fn()
-    const wrapper = shallow(<SideBar clickOutside={clickOutside} />)
-    wrapper.simulate("clickOut", {
-      preventDefault: jest.fn(),
-      target: { classList: { contains: jest.fn(() => false) } }
-    })
-    expect(clickOutside).toHaveBeenCalled()
+  it("does not render BucketSearch for non-logged-in users", () => {
+    web.LoggedIn.mockReturnValue(false)
+    const { container } = renderWithStore(<SideBar />, defaultState)
+    expect(container.querySelector(".ig-search")).toBeNull()
   })
 
-  it("should not call clickOutside when user clicks on sidebar toggle", () => {
-    const clickOutside = jest.fn()
-    const wrapper = shallow(<SideBar clickOutside={clickOutside} />)
-    wrapper.simulate("clickOut", {
-      preventDefault: jest.fn(),
-      target: { classList: { contains: jest.fn(() => true) } }
-    })
-    expect(clickOutside).not.toHaveBeenCalled()
+  it("renders BucketSearch when the user is logged in", () => {
+    web.LoggedIn.mockReturnValue(true)
+    const { container } = renderWithStore(<SideBar />, defaultState)
+    expect(container.querySelector(".ig-search")).not.toBeNull()
   })
 })

@@ -28,7 +28,7 @@ let InputGroup = ({
   readonly,
   autoComplete,
   align,
-  className
+  className,
 }) => {
   var input = (
     <input

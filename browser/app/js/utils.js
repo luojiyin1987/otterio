@@ -62,21 +62,21 @@ export const pathSlice = path => {
   if (!path)
     return {
       bucket,
-      prefix
+      prefix,
     }
   let objectIndex = path.indexOf("/", 1)
   if (objectIndex == -1) {
     bucket = path.slice(1)
     return {
       bucket,
-      prefix
+      prefix,
     }
   }
   bucket = path.slice(1, objectIndex)
   prefix = path.slice(objectIndex + 1)
   return {
     bucket,
-    prefix
+    prefix,
   }
 }
 

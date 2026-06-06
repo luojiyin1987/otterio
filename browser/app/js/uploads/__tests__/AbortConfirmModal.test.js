@@ -1,49 +1,57 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import React from "react"
-import { shallow } from "enzyme"
+import userEvent from "@testing-library/user-event"
+import { renderWithStore, defaultState } from "../../jest/test-utils"
 import { AbortConfirmModal } from "../AbortConfirmModal"
+import * as uploadsActions from "../actions"
+
+const stateWith = files => ({
+  ...defaultState,
+  uploads: { files, showAbortModal: true },
+})
 
 describe("AbortConfirmModal", () => {
-  it("should render without crashing", () => {
-    shallow(<AbortConfirmModal />)
+  beforeEach(() => jest.clearAllMocks())
+
+  it("renders without crashing", () => {
+    renderWithStore(<AbortConfirmModal />, stateWith({}))
   })
 
-  it("should call abort for every upload when Abort is clicked", () => {
-    const abort = jest.fn()
-    const wrapper = shallow(
-      <AbortConfirmModal
-        uploads={{
-          "a-b/-test1": { size: 100, loaded: 50, name: "test1" },
-          "a-b/-test2": { size: 100, loaded: 50, name: "test2" }
-        }}
-        abort={abort}
-      />
+  it("dispatches abortUpload for every active upload when Abort is clicked", async () => {
+    const user = userEvent.setup()
+    const spy = jest.spyOn(uploadsActions, "abortUpload")
+    renderWithStore(
+      <AbortConfirmModal />,
+      stateWith({
+        "a-b/-test1": { size: 100, loaded: 50, name: "test1" },
+        "a-b/-test2": { size: 100, loaded: 50, name: "test2" },
+      })
     )
-    wrapper.instance().abortUploads()
-    expect(abort.mock.calls.length).toBe(2)
-    expect(abort.mock.calls[0][0]).toBe("a-b/-test1")
-    expect(abort.mock.calls[1][0]).toBe("a-b/-test2")
+    await user.click(document.querySelector(".modal-confirm .btn-danger"))
+    expect(spy).toHaveBeenCalledTimes(2)
+    expect(spy.mock.calls.map(c => c[0])).toEqual([
+      "a-b/-test1",
+      "a-b/-test2",
+    ])
+    spy.mockRestore()
   })
 
-  it("should call hideAbort when cancel is clicked", () => {
-    const hideAbort = jest.fn()
-    const wrapper = shallow(<AbortConfirmModal hideAbort={hideAbort} />)
-    wrapper.find("ConfirmModal").prop("cancelHandler")()
-    expect(hideAbort).toHaveBeenCalled()
+  it("dispatches hideAbortModal when Cancel is clicked", async () => {
+    const user = userEvent.setup()
+    const spy = jest.spyOn(uploadsActions, "hideAbortModal")
+    renderWithStore(<AbortConfirmModal />, stateWith({}))
+    await user.click(document.querySelector(".modal-confirm .btn-link"))
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
   })
 })

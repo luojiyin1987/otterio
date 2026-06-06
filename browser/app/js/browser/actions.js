@@ -22,18 +22,18 @@ export const SET_STORAGE_INFO = "common/SET_STORAGE_INFO"
 export const SET_SERVER_INFO = "common/SET_SERVER_INFO"
 
 export const toggleSidebar = () => ({
-  type: TOGGLE_SIDEBAR
+  type: TOGGLE_SIDEBAR,
 })
 
 export const closeSidebar = () => ({
-  type: CLOSE_SIDEBAR
+  type: CLOSE_SIDEBAR,
 })
 
 export const fetchStorageInfo = () => {
-  return function(dispatch) {
+  return function (dispatch) {
     return web.StorageInfo().then(res => {
       const storageInfo = {
-        used: res.used
+        used: res.used,
       }
       dispatch(setStorageInfo(storageInfo))
     })
@@ -42,18 +42,18 @@ export const fetchStorageInfo = () => {
 
 export const setStorageInfo = storageInfo => ({
   type: SET_STORAGE_INFO,
-  storageInfo
+  storageInfo,
 })
 
 export const fetchServerInfo = () => {
-  return function(dispatch) {
+  return function (dispatch) {
     return web.ServerInfo().then(res => {
       const serverInfo = {
         version: res.OtterioVersion,
         platform: res.OtterioPlatform,
         runtime: res.OtterioRuntime,
         info: res.OtterioGlobalInfo,
-        userInfo: res.OtterioUserInfo
+        userInfo: res.OtterioUserInfo,
       }
       dispatch(setServerInfo(serverInfo))
     })
@@ -62,5 +62,5 @@ export const fetchServerInfo = () => {
 
 export const setServerInfo = serverInfo => ({
   type: SET_SERVER_INFO,
-  serverInfo
+  serverInfo,
 })

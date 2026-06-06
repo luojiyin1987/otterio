@@ -1,68 +1,74 @@
 .alert {
     border: 0;
     position: fixed;
-    max-width: 500px;
+    max-width: 480px;
     margin: 0;
-    box-shadow: 0 4px 5px rgba(0, 0, 0, 0.1);
-    color: @white;
+    box-shadow: var(--shadow-lg);
+    color: #ffffff;
     width: 100%;
-    right: 20px;
-    border-radius: 3px;
-    padding: 17px 50px 17px 17px;
+    right: @space-5;
+    border-radius: @radius-md;
+    padding: @space-4 @space-12 @space-4 @space-4;
     z-index: 10010;
-    .animation-duration(800ms);
+    font-size: @font-size-sm;
+    font-weight: @font-weight-medium;
+    .animation-duration(600ms);
     .animation-fill-mode(both);
 
     &:not(.progress) {
-        top: 20px;
+        top: @space-5;
 
         @media(min-width: (@screen-sm-min)) {
             left: 50%;
-            margin-left: -250px;
+            margin-left: -240px;
         }
     }
 
     &.progress {
-        bottom: 20px;
-        right: 20px;
+        bottom: @space-5;
+        right: @space-5;
+        background: var(--color-surface-raised);
+        color: var(--color-text);
+        border: 1px solid var(--color-border);
     }
 
     &.alert-danger {
-        background: @red;
+        background: linear-gradient(135deg, @accent-danger 0%, darken(@accent-danger, 10%) 100%);
     }
 
     &.alert-success {
-        background: @green;
+        background: linear-gradient(135deg, @accent-success 0%, @teal-700 100%);
     }
 
     &.alert-info {
-        background: @blue;
+        background: linear-gradient(135deg, @accent-info 0%, darken(@accent-info, 12%) 100%);
     }
 
     @media(max-width: (@screen-xs-max)) {
-        left: 20px;
+        left: @space-5;
         width: ~"calc(100% - 40px)";
         max-width: 100%;
     }
 
     .progress {
-        margin: 10px 10px 8px 0;
+        margin: @space-2 @space-2 6px 0;
         height: 5px;
         box-shadow: none;
-        border-radius: 1px;
-        background-color: @blue;
-        border-radius: 2px;
+        background-color: rgba(20, 160, 133, 0.15);
+        border-radius: @radius-pill;
         overflow: hidden;
     }
 
     .progress-bar {
         box-shadow: none;
-        background-color: @white;
+        background-color: var(--color-brand);
         height: 100%;
     }
 
     .close {
         position: absolute;
-        top: 15px;
+        top: 50%;
+        right: @space-3;
+        margin-top: -14px;
     }
 }

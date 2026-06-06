@@ -1,45 +1,41 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-import * as actionsCommon from "./actions"
+import { createSlice } from "@reduxjs/toolkit"
 
-export default (
-  state = {
-    sidebarOpen: false,
-    storageInfo: {used: 0},
-    serverInfo: {}
-  },
-  action
-) => {
-  switch (action.type) {
-    case actionsCommon.TOGGLE_SIDEBAR:
-      return Object.assign({}, state, {
-        sidebarOpen: !state.sidebarOpen
-      })
-    case actionsCommon.CLOSE_SIDEBAR:
-      return Object.assign({}, state, {
-        sidebarOpen: false
-      })
-    case actionsCommon.SET_STORAGE_INFO:
-      return Object.assign({}, state, {
-        storageInfo: action.storageInfo
-      })
-    case actionsCommon.SET_SERVER_INFO:
-      return { ...state, serverInfo: action.serverInfo }
-    default:
-      return state
-  }
+const initialState = {
+  sidebarOpen: false,
+  storageInfo: { used: 0 },
+  serverInfo: {},
 }
+
+// Slice is named "common" so generated types stay common/TOGGLE_SIDEBAR etc.,
+// matching the existing constants exported from ./actions.js.
+const browserSlice = createSlice({
+  name: "common",
+  initialState,
+  reducers: {
+    TOGGLE_SIDEBAR: state => {
+      state.sidebarOpen = !state.sidebarOpen
+    },
+    CLOSE_SIDEBAR: state => {
+      state.sidebarOpen = false
+    },
+    SET_STORAGE_INFO: (state, action) => {
+      state.storageInfo = action.storageInfo ?? action.payload
+    },
+    SET_SERVER_INFO: (state, action) => {
+      state.serverInfo = action.serverInfo ?? action.payload
+    },
+  },
+})
+
+export default browserSlice.reducer

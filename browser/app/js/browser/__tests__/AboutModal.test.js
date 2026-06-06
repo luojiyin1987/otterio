@@ -1,40 +1,34 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import React from "react"
-import { shallow } from "enzyme"
+import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { AboutModal } from "../AboutModal"
 
-describe("AboutModal", () => {
-  const serverInfo = {
-    version: "test",
-    platform: "test",
-    runtime: "test"
-  }
+const serverInfo = { version: "v1", platform: "linux", runtime: "go1.22" }
 
-  it("should render without crashing", () => {
-    shallow(<AboutModal serverInfo={serverInfo} />)
+describe("AboutModal", () => {
+  it("renders the version/platform/runtime values", () => {
+    render(<AboutModal serverInfo={serverInfo} hideAbout={() => {}} />)
+    expect(screen.getByText("v1")).toBeInTheDocument()
+    expect(screen.getByText("linux")).toBeInTheDocument()
+    expect(screen.getByText("go1.22")).toBeInTheDocument()
   })
 
-  it("should call hideAbout when close button is clicked", () => {
+  it("calls hideAbout when the close button is clicked", async () => {
+    const user = userEvent.setup()
     const hideAbout = jest.fn()
-    const wrapper = shallow(
-      <AboutModal serverInfo={serverInfo} hideAbout={hideAbout} />
-    )
-    wrapper.find("button").simulate("click")
+    render(<AboutModal serverInfo={serverInfo} hideAbout={hideAbout} />)
+    await user.click(document.querySelector(".close"))
     expect(hideAbout).toHaveBeenCalled()
   })
 })

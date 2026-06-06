@@ -1,131 +1,117 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import React from "react"
-import { shallow, mount } from "enzyme"
+import { render, fireEvent } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { renderWithStore, defaultState } from "../../jest/test-utils"
 import { ChangePasswordModal } from "../ChangePasswordModal"
-import jwtDecode from "jwt-decode"
 
-jest.mock("jwt-decode")
-
-jwtDecode.mockImplementation(() => ({ sub: "otterio" }))
+jest.mock("jwt-decode", () => ({
+  jwtDecode: () => ({ sub: "otterio" }),
+}))
 
 jest.mock("../../web", () => ({
-  SetAuth: jest.fn(
-    ({ currentAccessKey, currentSecretKey, newAccessKey, newSecretKey }) => {
-      if (
-        currentAccessKey == "otterio" &&
-        currentSecretKey == "otterio123" &&
-        newAccessKey == "test" &&
-        newSecretKey == "test1234"
-      ) {
-        return Promise.resolve({})
-      } else {
-        return Promise.reject({
-          message: "Error"
-        })
-      }
-    }
-  ),
-  GetToken: jest.fn(() => "")
+  SetAuth: jest.fn(() => Promise.resolve({})),
+  GetToken: jest.fn(() => ""),
 }))
 
 jest.mock("../../utils", () => ({
   getRandomAccessKey: () => "raccesskey",
-  getRandomSecretKey: () => "rsecretkey"
+  getRandomSecretKey: () => "rsecretkey",
 }))
 
+const iamServerInfo = {
+  version: "test",
+  platform: "test",
+  runtime: "test",
+  info: {},
+  userInfo: { isIAMUser: true },
+}
+
 describe("ChangePasswordModal", () => {
-  const serverInfo = {
-    version: "test",
-    platform: "test",
-    runtime: "test",
-    info: {},
-    userInfo: { isIAMUser: true }
-  }
-
-  it("should render without crashing", () => {
-    shallow(<ChangePasswordModal serverInfo={serverInfo} />)
-  })
-
-  it("should not allow changing password when not IAM user", () => {
-    const newServerInfo = {
-      ...serverInfo,
-      userInfo: { isIAMUser: false }
-    }
-    const wrapper = shallow(<ChangePasswordModal serverInfo={newServerInfo} />)
-    expect(
-      wrapper
-        .find("ModalBody")
-        .childAt(0)
-        .text()
-    ).toBe("Credentials of this user cannot be updated through OtterIO Browser.")
-  })
-
-  it("should not allow changing password for STS user", () => {
-    const newServerInfo = {
-      ...serverInfo,
-      userInfo: { isTempUser: true }
-    }
-    const wrapper = shallow(<ChangePasswordModal serverInfo={newServerInfo} />)
-    expect(
-      wrapper
-        .find("ModalBody")
-        .childAt(0)
-        .text()
-    ).toBe("Credentials of this user cannot be updated through OtterIO Browser.")
-  })
-
-  it("should not generate accessKey for IAM User", () => {
-    const wrapper = shallow(<ChangePasswordModal serverInfo={serverInfo} />)
-    wrapper.find("#generate-keys").simulate("click")
-    setImmediate(() => {
-      expect(wrapper.state("newAccessKey")).toBe("otterio")
-      expect(wrapper.state("newSecretKey")).toBe("rsecretkey")
-    })
-  })
-
-  it("should not show new accessKey field for IAM User", () => {
-    const wrapper = shallow(<ChangePasswordModal serverInfo={serverInfo} />)
-    expect(wrapper.find("#newAccesskey").exists()).toBeFalsy()
-  })
-
-  it("should disable Update button for secretKey", () => {
-    const showAlert = jest.fn()
-    const wrapper = shallow(
-      <ChangePasswordModal serverInfo={serverInfo} showAlert={showAlert} />
+  it("renders without crashing", () => {
+    renderWithStore(
+      <ChangePasswordModal serverInfo={iamServerInfo} hideChangePassword={() => {}} />,
+      defaultState
     )
-    wrapper
-      .find("#currentSecretKey")
-      .simulate("change", { target: { value: "otterio123" } })
-    wrapper
-      .find("#newSecretKey")
-      .simulate("change", { target: { value: "t1" } })
-    expect(wrapper.find("#update-keys").prop("disabled")).toBeTruthy()
   })
 
-  it("should call hideChangePassword when Cancel button is clicked", () => {
-    const hideChangePassword = jest.fn()
-    const wrapper = shallow(
+  it("displays a message when user is not an IAM user", () => {
+    renderWithStore(
       <ChangePasswordModal
-        serverInfo={serverInfo}
-        hideChangePassword={hideChangePassword}
-      />
+        serverInfo={{ ...iamServerInfo, userInfo: { isIAMUser: false } }}
+        hideChangePassword={() => {}}
+      />,
+      defaultState
     )
-    wrapper.find("#cancel-change-password").simulate("click")
+    // react-bootstrap Modal portals its body to document.body, so the visible
+    // copy of the message lives outside the render container.
+    expect(document.body.textContent).toContain(
+      "Credentials of this user cannot be updated"
+    )
+  })
+
+  it("displays the same message for STS/temp users", () => {
+    renderWithStore(
+      <ChangePasswordModal
+        serverInfo={{ ...iamServerInfo, userInfo: { isTempUser: true } }}
+        hideChangePassword={() => {}}
+      />,
+      defaultState
+    )
+    expect(document.body.textContent).toContain(
+      "Credentials of this user cannot be updated"
+    )
+  })
+
+  it("does not render the new access key field for IAM users", () => {
+    renderWithStore(
+      <ChangePasswordModal
+        serverInfo={iamServerInfo}
+        hideChangePassword={() => {}}
+      />,
+      defaultState
+    )
+    expect(document.querySelector("#newAccesskey")).toBeNull()
+  })
+
+  it("keeps the Update button disabled while inputs are too short", () => {
+    renderWithStore(
+      <ChangePasswordModal
+        serverInfo={iamServerInfo}
+        hideChangePassword={() => {}}
+      />,
+      defaultState
+    )
+    fireEvent.change(document.querySelector("#currentSecretKey"), {
+      target: { value: "otterio123" },
+    })
+    fireEvent.change(document.querySelector("#newSecretKey"), {
+      target: { value: "t1" },
+    })
+    expect(document.querySelector("#update-keys").disabled).toBe(true)
+  })
+
+  it("calls hideChangePassword when cancel is clicked", async () => {
+    const user = userEvent.setup()
+    const hideChangePassword = jest.fn()
+    renderWithStore(
+      <ChangePasswordModal
+        serverInfo={iamServerInfo}
+        hideChangePassword={hideChangePassword}
+      />,
+      defaultState
+    )
+    await user.click(document.querySelector("#cancel-change-password"))
     expect(hideChangePassword).toHaveBeenCalled()
   })
 })

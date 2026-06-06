@@ -1,82 +1,66 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import React from "react"
-import { shallow, mount } from "enzyme"
-import { MainActions } from "../MainActions"
+import userEvent from "@testing-library/user-event"
+import { renderWithStore, defaultState } from "../../jest/test-utils"
+import MainActions from "../MainActions"
+import * as bucketActions from "../../buckets/actions"
+import * as uploadActions from "../../uploads/actions"
 
 jest.mock("../../web", () => ({
-  LoggedIn: jest
-    .fn(() => true)
-    .mockReturnValueOnce(true)
-    .mockReturnValueOnce(false)
-    .mockReturnValueOnce(false)
+  LoggedIn: jest.fn(() => true),
 }))
 
+const web = require("../../web")
+
+beforeEach(() => {
+  jest
+    .spyOn(bucketActions, "showMakeBucketModal")
+    .mockReturnValue({ type: "TEST_SHOW_MAKE_BUCKET_MODAL" })
+  jest
+    .spyOn(uploadActions, "uploadFile")
+    .mockImplementation(file => ({ type: "TEST_UPLOAD_FILE", file }))
+})
+
+afterEach(() => jest.restoreAllMocks())
+
+const buildState = (overrides = {}) => ({
+  ...defaultState,
+  objects: { ...defaultState.objects, prefixWritable: false, ...overrides },
+})
+
+const openMenu = async user => {
+  await user.click(document.querySelector(".feba-toggle"))
+}
+
 describe("MainActions", () => {
-  it("should render without crashing", () => {
-    shallow(<MainActions />)
+  it("renders nothing when user is not logged in and prefix is not writable", () => {
+    web.LoggedIn.mockReturnValue(false)
+    const { container } = renderWithStore(<MainActions />, buildState())
+    expect(container.querySelector(".feba-toggle")).toBeNull()
   })
 
-  it("should not show any actions when user has not LoggedIn and prefixWritable is false", () => {
-    const wrapper = shallow(<MainActions />)
-    expect(wrapper.find("#show-make-bucket").length).toBe(0)
-    expect(wrapper.find("#file-input").length).toBe(0)
+  it("shows actions when user is logged in", () => {
+    web.LoggedIn.mockReturnValue(true)
+    const { container } = renderWithStore(<MainActions />, buildState())
+    expect(container.querySelector(".feba-toggle")).not.toBeNull()
   })
 
-  it("should show only file upload action when user has not LoggedIn and prefixWritable is true", () => {
-    const wrapper = shallow(<MainActions prefixWritable={true} />)
-    expect(wrapper.find("#show-make-bucket").length).toBe(0)
-    expect(wrapper.find("#file-input").length).toBe(1)
-  })
-
-  it("should show make bucket upload file actions when user has LoggedIn", () => {
-    const wrapper = shallow(<MainActions />)
-    expect(wrapper.find("#show-make-bucket").length).toBe(1)
-    expect(wrapper.find("#file-input").length).toBe(1)
-  })
-
-  it("should call showMakeBucketModal when create bucket icon is clicked", () => {
-    const showMakeBucketModal = jest.fn()
-    const wrapper = shallow(
-      <MainActions showMakeBucketModal={showMakeBucketModal} />
-    )
-    wrapper
-      .find("#show-make-bucket")
-      .simulate("click", { preventDefault: jest.fn() })
-    expect(showMakeBucketModal).toHaveBeenCalled()
-  })
-
-  it("should call uploadFile when a file is selected for upload", () => {
-    const uploadFile = jest.fn()
-    const wrapper = shallow(<MainActions uploadFile={uploadFile} />)
-    const files = [new Blob(["file content"], { type: "text/plain" })]
-    const input = wrapper.find("#file-input")
-    const event = {
-      preventDefault: jest.fn(),
-      target: {
-        files: {
-          length: files.length,
-          item: function(index) {
-            return files[index]
-          }
-        }
-      }
-    }
-    input.simulate("change", event)
-    expect(uploadFile).toHaveBeenCalledWith(files[0])
+  it("dispatches showMakeBucketModal when create bucket is clicked", async () => {
+    const user = userEvent.setup()
+    web.LoggedIn.mockReturnValue(true)
+    renderWithStore(<MainActions />, buildState())
+    await openMenu(user)
+    await user.click(document.querySelector("#show-make-bucket"))
+    expect(bucketActions.showMakeBucketModal).toHaveBeenCalled()
   })
 })

@@ -111,7 +111,7 @@ const isPresentation = (name, contentType) => {
   return false
 }
 
-const typeToIcon = (type) => {
+const typeToIcon = type => {
   return (name, contentType) => {
     if (!contentType || !contentType.includes("/")) return false
     if (contentType.split("/")[0] === type) return true

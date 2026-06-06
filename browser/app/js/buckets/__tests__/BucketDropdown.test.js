@@ -1,62 +1,60 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import React from "react"
-import { shallow, mount } from "enzyme"
-import { BucketDropdown } from "../BucketDropdown"
+import userEvent from "@testing-library/user-event"
+import { renderWithStore, defaultState } from "../../jest/test-utils"
+import BucketDropdown from "../BucketDropdown"
+import * as bucketActions from "../actions"
+
+// react-bootstrap 2 keeps the dropdown menu unmounted until the toggle is
+// activated. We open it explicitly before asserting on the items.
+const openMenu = async user => {
+  await user.click(document.querySelector(".fa-ellipsis-v").parentElement)
+}
 
 describe("BucketDropdown", () => {
-  it("should render without crashing", () => {
-    shallow(<BucketDropdown />)
+  beforeEach(() => jest.clearAllMocks())
+
+  it("renders the trigger", () => {
+    const { container } = renderWithStore(
+      <BucketDropdown bucket="test" />,
+      defaultState
+    )
+    expect(container.querySelector(".fa-ellipsis-v")).not.toBeNull()
   })
 
-  it("should call toggleDropdown on dropdown toggle", () => {
-    const spy = jest.spyOn(BucketDropdown.prototype, 'toggleDropdown')
-    const wrapper = shallow(
-      <BucketDropdown />
-    )
-    wrapper
-      .find("Uncontrolled(Dropdown)")
-      .simulate("toggle")
+  it("dispatches showBucketPolicy when Edit policy is clicked", async () => {
+    const user = userEvent.setup()
+    const spy = jest
+      .spyOn(bucketActions, "showBucketPolicy")
+      .mockReturnValue({ type: "TEST_SHOW_POLICY" })
+    renderWithStore(<BucketDropdown bucket="test" />, defaultState)
+    await openMenu(user)
+    const links = document.querySelectorAll("li a")
+    await user.click(links[0])
     expect(spy).toHaveBeenCalled()
-    spy.mockReset()
     spy.mockRestore()
   })
 
-  it("should call showBucketPolicy when Edit Policy link is clicked", () => {
-    const showBucketPolicy = jest.fn()
-    const wrapper = shallow(
-      <BucketDropdown showBucketPolicy={showBucketPolicy} />
-    )
-    wrapper
-      .find("li a")
-      .at(0)
-      .simulate("click", { stopPropagation: jest.fn() })
-    expect(showBucketPolicy).toHaveBeenCalled()
-  })
-
-  it("should call deleteBucket when Delete link is clicked", () => {
-    const deleteBucket = jest.fn()
-    const wrapper = shallow(
-      <BucketDropdown bucket={"test"} deleteBucket={deleteBucket} />
-    )
-    wrapper
-      .find("li a")
-      .at(1)
-      .simulate("click", { stopPropagation: jest.fn() })
-    expect(deleteBucket).toHaveBeenCalledWith("test")
+  it("dispatches deleteBucket when Delete is clicked", async () => {
+    const user = userEvent.setup()
+    const spy = jest
+      .spyOn(bucketActions, "deleteBucket")
+      .mockReturnValue({ type: "TEST_DELETE_BUCKET" })
+    renderWithStore(<BucketDropdown bucket="test" />, defaultState)
+    await openMenu(user)
+    const links = document.querySelectorAll("li a")
+    await user.click(links[1])
+    expect(spy).toHaveBeenCalledWith("test")
+    spy.mockRestore()
   })
 })

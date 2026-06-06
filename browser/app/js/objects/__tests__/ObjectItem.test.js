@@ -1,76 +1,63 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 import React from "react"
-import { shallow } from "enzyme"
+import { render, fireEvent } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { ObjectItem } from "../ObjectItem"
 
 describe("ObjectItem", () => {
-  it("should render without crashing", () => {
-    shallow(<ObjectItem name={"test"} />)
+  it("renders without crashing", () => {
+    render(<ObjectItem name="test" />)
   })
 
-  it("should render with content type", () => {
-    const wrapper = shallow(<ObjectItem name={"test.jpg"} contentType={""} />)
-    expect(wrapper.prop("data-type")).toBe("image")
+  it("infers data-type from the file name", () => {
+    const { container } = render(<ObjectItem name="test.jpg" contentType="" />)
+    expect(container.querySelector(".fesl-row").dataset.type).toBe("image")
   })
 
-  it("shouldn't call onClick when the object isclicked", () => {
+  it("calls onClick when a folder link is clicked", async () => {
+    const user = userEvent.setup()
     const onClick = jest.fn()
-    const checkObject = jest.fn()
-    const wrapper = shallow(
-      <ObjectItem name={"test"} checkObject={checkObject} />
-    )
-    wrapper.find("a").simulate("click", { preventDefault: jest.fn() })
-    expect(onClick).not.toHaveBeenCalled()
-  })
-
-  it("should call onClick when the folder isclicked", () => {
-    const onClick = jest.fn()
-    const wrapper = shallow(<ObjectItem name={"test/"} onClick={onClick} />)
-    wrapper.find("a").simulate("click", { preventDefault: jest.fn() })
+    const { container } = render(<ObjectItem name="test/" onClick={onClick} />)
+    await user.click(container.querySelector("a"))
     expect(onClick).toHaveBeenCalled()
   })
 
-  it("should call checkObject when the object/prefix is checked", () => {
+  it("calls checkObject when the checkbox is toggled (unchecked -> checked)", () => {
     const checkObject = jest.fn()
-    const wrapper = shallow(
-      <ObjectItem name={"test"} checked={false} checkObject={checkObject} />
+    const { container } = render(
+      <ObjectItem name="test" checked={false} checkObject={checkObject} />
     )
-    wrapper.find("input[type='checkbox']").simulate("change")
+    fireEvent.click(container.querySelector('input[type="checkbox"]'))
     expect(checkObject).toHaveBeenCalledWith("test")
   })
 
-  it("should render checked checkbox", () => {
-    const wrapper = shallow(<ObjectItem name={"test"} checked={true} />)
-    expect(wrapper.find("input[type='checkbox']").prop("checked")).toBeTruthy()
-  })
-
-  it("should call uncheckObject when the object/prefix is unchecked", () => {
+  it("calls uncheckObject when the checkbox is toggled (checked -> unchecked)", () => {
     const checkObject = jest.fn()
     const uncheckObject = jest.fn()
-    const wrapper = shallow(
+    const { container } = render(
       <ObjectItem
-        name={"test"}
+        name="test"
         checked={true}
         checkObject={checkObject}
         uncheckObject={uncheckObject}
       />
     )
-    wrapper.find("input[type='checkbox']").simulate("change")
+    fireEvent.click(container.querySelector('input[type="checkbox"]'))
     expect(uncheckObject).toHaveBeenCalledWith("test")
+  })
+
+  it("renders the checkbox as checked when prop is true", () => {
+    const { container } = render(<ObjectItem name="test" checked={true} />)
+    expect(container.querySelector('input[type="checkbox"]').checked).toBe(true)
   })
 })

@@ -7,21 +7,17 @@
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-import "jest-enzyme"
-import { configure } from "enzyme"
-import Adapter from "enzyme-adapter-react-16"
+import "@testing-library/jest-dom"
 
 // jsdom (jest 29+) no longer exposes setImmediate, which some tests rely on.
 if (typeof global.setImmediate === "undefined") {
   global.setImmediate = (fn, ...args) => global.setTimeout(fn, 0, ...args)
 }
 
-configure({ adapter: new Adapter() })
+// React 18 + Testing Library expect this flag to be set in development/test
+// environments to silence a warning about not using IS_REACT_ACT_ENVIRONMENT.
+if (typeof global.IS_REACT_ACT_ENVIRONMENT === "undefined") {
+  global.IS_REACT_ACT_ENVIRONMENT = true
+}

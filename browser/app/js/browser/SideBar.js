@@ -1,71 +1,55 @@
 /*
  * MinIO Cloud Storage (C) 2016, 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-import React from "react"
+import React, { useCallback } from "react"
 import classNames from "classnames"
-import ClickOutHandler from "react-onclickout"
-import { connect } from "react-redux"
-
+import { useDispatch, useSelector } from "react-redux"
 import BucketSearch from "../buckets/BucketSearch"
 import BucketList from "../buckets/BucketList"
 import Host from "./Host"
 import * as actionsCommon from "./actions"
 import web from "../web"
+import useOnClickOutside from "../utils/useOnClickOutside"
 
-export const SideBar = ({ sidebarOpen, clickOutside }) => {
-  const onClickOut = e => {
-    if (e.target.classList.contains("feh-trigger")) {
-      return
-    }
-    clickOutside()
-  }
+export const SideBar = () => {
+  const dispatch = useDispatch()
+  const sidebarOpen = useSelector(state => state.browser.sidebarOpen)
+
+  // Close the sidebar when the user clicks outside of it on small screens.
+  // The .feh-trigger button toggles the sidebar from outside, so guard
+  // against treating a click on that as an "outside" click.
+  const handleClickOutside = useCallback(
+    e => {
+      if (e.target && e.target.classList.contains("feh-trigger")) return
+      dispatch(actionsCommon.closeSidebar())
+    },
+    [dispatch]
+  )
+  const outsideRef = useOnClickOutside(handleClickOutside)
+
   return (
-    <ClickOutHandler onClickOut={onClickOut}>
-      <div
-        className={classNames({
-          "fe-sidebar": true,
-          toggled: sidebarOpen
-        })}
-      >
-        <div className="fes-header clearfix hidden-sm hidden-xs">
-          <h2>OtterIO Browser</h2>
-        </div>
-        <div className="fes-list">
-          {web.LoggedIn() && <BucketSearch />}
-          <BucketList />
-        </div>
-        <Host />
+    <div
+      ref={outsideRef}
+      className={classNames({ "fe-sidebar": true, toggled: sidebarOpen })}
+    >
+      <div className="fes-header clearfix hidden-sm hidden-xs">
+        <h2>OtterIO Browser</h2>
       </div>
-    </ClickOutHandler>
+      <div className="fes-list">
+        {web.LoggedIn() && <BucketSearch />}
+        <BucketList />
+      </div>
+      <Host />
+    </div>
   )
 }
 
-const mapStateToProps = state => {
-  return {
-    sidebarOpen: state.browser.sidebarOpen
-  }
-}
-
-const mapDispatchToProps = dispatch => {
-  return {
-    clickOutside: () => dispatch(actionsCommon.closeSidebar())
-  }
-}
-
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(SideBar)
+export default SideBar

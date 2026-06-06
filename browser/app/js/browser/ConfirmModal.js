@@ -26,11 +26,11 @@ let ConfirmModal = ({
   cancelText,
   okHandler,
   cancelHandler,
-  show
+  show,
 }) => {
   return (
     <Modal
-      bsSize="small"
+      size="sm"
       animation={false}
       show={show}
       className={"modal-confirm " + (baseClass || "")}

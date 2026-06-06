@@ -1,92 +1,64 @@
 /*
  * MinIO Cloud Storage (C) 2018 MinIO, Inc.
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-import React from "react"
-import classNames from "classnames"
-import { connect } from "react-redux"
+import React, { useState } from "react"
+import { useDispatch } from "react-redux"
+import { Dropdown } from "react-bootstrap"
 import * as actionsBuckets from "./actions"
-import { getCurrentBucket } from "./selectors"
-import Dropdown from "react-bootstrap/lib/Dropdown"
+import { CaretlessToggle } from "../utils/dropdownToggle"
 
-export class BucketDropdown extends React.Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      showBucketDropdown: false
-    }
-  }
+export const BucketDropdown = ({ bucket }) => {
+  const [show, setShow] = useState(false)
+  const dispatch = useDispatch()
 
-  toggleDropdown() {
-    if (this.state.showBucketDropdown) {
-      this.setState({
-        showBucketDropdown: false
-      })
-    } else {
-      this.setState({
-        showBucketDropdown: true
-      })
-    }
-  }
+  const toggleDropdown = () => setShow(prev => !prev)
 
-  render() {
-    const { bucket, showBucketPolicy, deleteBucket, currentBucket } = this.props
-    return (
-      <Dropdown 
-        open = {this.state.showBucketDropdown}
-        onToggle = {this.toggleDropdown.bind(this)}
-        className="bucket-dropdown" 
-        id="bucket-dropdown"
-      >
-        <Dropdown.Toggle noCaret>
-          <i className="zmdi zmdi-more-vert" />
-        </Dropdown.Toggle>
-        <Dropdown.Menu className="dropdown-menu-right">
-          <li>
-            <a 
-              onClick={e => {
-                e.stopPropagation()
-                this.toggleDropdown()
-                showBucketPolicy()
-              }}
-            >
-              Edit policy
-            </a>
-          </li>
-          <li>
-            <a 
-              onClick={e => {
-                e.stopPropagation()
-                this.toggleDropdown()
-                deleteBucket(bucket)
-              }}
-            >
-              Delete
-            </a>
-          </li>
-        </Dropdown.Menu>
-      </Dropdown>
-    )
-  }
+  return (
+    <Dropdown
+      show={show}
+      onToggle={toggleDropdown}
+      className="bucket-dropdown"
+      align="end"
+    >
+      <Dropdown.Toggle as={CaretlessToggle} className="dropdown-toggle">
+        <i className="fas fa-ellipsis-v" />
+      </Dropdown.Toggle>
+      <Dropdown.Menu>
+        <li className="dropdown-item-wrap">
+          <a
+            className="dropdown-item"
+            onClick={e => {
+              e.stopPropagation()
+              toggleDropdown()
+              dispatch(actionsBuckets.showBucketPolicy())
+            }}
+          >
+            Edit policy
+          </a>
+        </li>
+        <li className="dropdown-item-wrap">
+          <a
+            className="dropdown-item"
+            onClick={e => {
+              e.stopPropagation()
+              toggleDropdown()
+              dispatch(actionsBuckets.deleteBucket(bucket))
+            }}
+          >
+            Delete
+          </a>
+        </li>
+      </Dropdown.Menu>
+    </Dropdown>
+  )
 }
 
-const mapDispatchToProps = dispatch => {
-  return {
-    deleteBucket: bucket => dispatch(actionsBuckets.deleteBucket(bucket)),
-    showBucketPolicy: () => dispatch(actionsBuckets.showBucketPolicy())
-  }
-}
-
-export default connect(state => state, mapDispatchToProps)(BucketDropdown)
+export default BucketDropdown
