@@ -41,7 +41,7 @@ type adminErasureTestBed struct {
 	router      http.Handler
 }
 
-// skipIfWindowsAdminErasureTestBed centralises the Windows skip used by every
+// skipIfWindowsAdminErasureTestBed centralizes the Windows skip used by every
 // test that spins up a 16-disk Erasure backend via prepareAdminErasureTestBed.
 //
 // Bringing up the testbed on a hosted Windows runner is dominated by NTFS file
