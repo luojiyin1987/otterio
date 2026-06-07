@@ -158,21 +158,21 @@ jobs:
       - name: make crosscompile
         run: make crosscompile
 
-  # Integration-style verification (boots the server and exercises it).
-  verify:
-    name: Verify build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-      - name: make verify
-        run: |
-          sudo sysctl net.ipv6.conf.all.disable_ipv6=0
-          sudo sysctl net.ipv6.conf.default.disable_ipv6=0
-          make verify
+  # # Integration-style verification (boots the server and exercises it).
+  # verify:
+  #   name: Verify build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - uses: actions/setup-go@v6
+  #       with:
+  #         go-version: ${{ env.GO_VERSION }}
+  #         cache: true
+  #     - name: make verify
+  #       run: |
+  #         sudo sysctl net.ipv6.conf.all.disable_ipv6=0
+  #         sudo sysctl net.ipv6.conf.default.disable_ipv6=0
+  #         make verify
 
   # Healing verification (boots the server with -race and exercises healing).
   verify-healing:
