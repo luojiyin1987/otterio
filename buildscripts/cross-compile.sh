@@ -9,7 +9,10 @@ function _init() {
     export CGO_ENABLED=0
 
     ## List of architectures and OS to test coss compilation.
-    SUPPORTED_OSARCH="linux/ppc64le linux/mips64 linux/arm64 linux/s390x darwin/arm64 darwin/amd64 freebsd/amd64 windows/amd64 linux/arm linux/386 netbsd/amd64 linux/mips"
+    ## Only the platforms that actually ship binaries / images are smoke-tested.
+    ## 32-bit targets (arm, 386, mips) and rarely-used niches
+    ## (mips64, freebsd, netbsd, s390x) are intentionally excluded.
+    SUPPORTED_OSARCH="linux/amd64 linux/arm64 linux/ppc64le darwin/amd64 darwin/arm64 windows/amd64"
 }
 
 function _build() {

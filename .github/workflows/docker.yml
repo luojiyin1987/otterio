@@ -66,7 +66,7 @@ jobs:
           set -euo pipefail
           LDFLAGS="$(go run buildscripts/gen-ldflags.go)"
           mkdir -p dist
-          for arch in amd64 arm64 ppc64le s390x; do
+          for arch in amd64 arm64 ppc64le; do
             out="dist/otterio-linux-${arch}"
             echo "==> Building ${out}"
             GOOS=linux GOARCH="${arch}" go build \
@@ -136,7 +136,7 @@ jobs:
         with:
           context: .
           file: Dockerfile.ci
-          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+          platforms: linux/amd64,linux/arm64,linux/ppc64le
           push: true
           build-args: |
             RELEASE=edge-${{ needs.binaries.outputs.short_sha }}

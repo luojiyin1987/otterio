@@ -100,7 +100,7 @@ jobs:
           TAG="${{ steps.ver.outputs.tag }}"
           LDFLAGS="$(go run buildscripts/gen-ldflags.go "${VERSION}")"
           mkdir -p dist
-          platforms="linux/amd64 linux/arm64 linux/ppc64le linux/s390x darwin/amd64 darwin/arm64 windows/amd64"
+          platforms="linux/amd64 linux/arm64 linux/ppc64le darwin/amd64 darwin/arm64 windows/amd64"
           for p in ${platforms}; do
             os="${p%/*}"
             arch="${p#*/}"
@@ -179,7 +179,7 @@ jobs:
         with:
           context: .
           file: Dockerfile.ci
-          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+          platforms: linux/amd64,linux/arm64,linux/ppc64le
           push: true
           build-args: |
             RELEASE=${{ needs.binaries.outputs.tag }}

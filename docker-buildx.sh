@@ -6,14 +6,14 @@ release=$(git describe --abbrev=0 --tags)
 
 docker buildx build --push --no-cache \
        --build-arg RELEASE="${release}" -t "soulteary/otterio:latest" \
-       --platform=linux/arm64,linux/amd64,linux/ppc64le,linux/s390x \
+       --platform=linux/arm64,linux/amd64,linux/ppc64le \
        -f Dockerfile.release .
 
 docker buildx prune -f
 
 docker buildx build --push --no-cache \
        --build-arg RELEASE="${release}" -t "soulteary/otterio:${release}" \
-       --platform=linux/arm64,linux/amd64,linux/ppc64le,linux/s390x \
+       --platform=linux/arm64,linux/amd64,linux/ppc64le \
        -f Dockerfile.release .
 
 docker buildx prune -f

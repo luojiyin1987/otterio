@@ -125,9 +125,7 @@ The release pipeline ([`.goreleaser.yml`](./.goreleaser.yml)) currently produces
 | --------------------------- | ---------- |
 | 64-bit Intel/AMD            | `amd64`    |
 | 64-bit ARM                  | `arm64`    |
-| 32-bit ARMv7                | `arm`      |
 | 64-bit PowerPC LE           | `ppc64le`  |
-| IBM Z-Series                | `s390x`    |
 
 `.deb` and `.rpm` packages are also produced for the supported architectures.
 

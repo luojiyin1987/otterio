@@ -125,9 +125,7 @@ chmod +x otterio
 | ---------------------- | ---------- |
 | 64 位 Intel/AMD        | `amd64`    |
 | 64 位 ARM              | `arm64`    |
-| 32 位 ARMv7            | `arm`      |
 | 64 位 PowerPC LE       | `ppc64le`  |
-| IBM Z 系列             | `s390x`    |
 
 并同时提供对应架构的 `.deb` 与 `.rpm` 软件包。
 

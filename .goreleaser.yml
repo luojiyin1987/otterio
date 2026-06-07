@@ -24,43 +24,19 @@ builds:
       - linux
       - darwin
       - windows
-      - freebsd
 
     goarch:
       - amd64
       - arm64
-      - arm
       - ppc64le
-      - s390x
-
-    goarm:
-      - 7
 
     ignore:
       - goos: darwin
-        goarch: arm64
-      - goos: darwin
-        goarch: arm
-      - goos: darwin
         goarch: ppc64le
-      - goos: darwin
-        goarch: s390x
       - goos: windows
         goarch: arm64
       - goos: windows
-        goarch: arm
-      - goos: windows
         goarch: ppc64le
-      - goos: windows
-        goarch: s390x
-      - goos: freebsd
-        goarch: arm
-      - goos: freebsd
-        goarch: arm64
-      - goos: freebsd
-        goarch: ppc64le
-      - goos: freebsd
-        goarch: s390x
 
     flags:
       - -tags=kqueue
@@ -90,8 +66,6 @@ nfpms:
     overrides:
       deb:
         file_name_template: "{{ .Binary }}-release/debs/{{ .ProjectName }}-{{ .Version }}_{{ .Arch }}"
-        replacements:
-          arm: armv7
         files:
           "NOTICE": "/usr/share/otterio/NOTICE"
           "CREDITS": "/usr/share/otterio/CREDITS"
@@ -102,7 +76,6 @@ nfpms:
         replacements:
           amd64: x86_64
           arm64: aarch64
-          arm: armv7
         files:
           "NOTICE": "/usr/share/otterio/NOTICE"
           "CREDITS": "/usr/share/otterio/CREDITS"
