@@ -140,7 +140,7 @@ func testTagging() {
 		}
 		result, err := s3Client.GetObjectTagging(input)
 		if err == nil && uploads[i].deleteMarker {
-			failureLog(function, args, startTime, "", "GET Object tagging expected to fail with delete marker but succeded", err).Fatal()
+			failureLog(function, args, startTime, "", "GET Object tagging expected to fail with delete marker but succeeded", err).Fatal()
 			return
 		}
 		if err != nil && !uploads[i].deleteMarker {
@@ -167,7 +167,7 @@ func testTagging() {
 		}
 		_, err := s3Client.DeleteObjectTagging(input)
 		if err == nil && uploads[i].deleteMarker {
-			failureLog(function, args, startTime, "", "DELETE Object tagging expected to fail with delete marker but succeded", err).Fatal()
+			failureLog(function, args, startTime, "", "DELETE Object tagging expected to fail with delete marker but succeeded", err).Fatal()
 			return
 		}
 		if err != nil && !uploads[i].deleteMarker {
