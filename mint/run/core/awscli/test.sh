@@ -98,7 +98,7 @@ function test_create_bucket() {
         out=$($function 2>&1)
         rv=$?
     else
-        # if make bucket failes, $bucket_name has the error output
+        # if make bucket fails, $bucket_name has the error output
         out="${bucket_name}"
     fi
 
@@ -108,7 +108,7 @@ function test_create_bucket() {
         out=$(delete_bucket "${bucket_name}")
         rv=$?
     else
-        # if make bucket failes, $bucket_name has the error output
+        # if make bucket fails, $bucket_name has the error output
         out="${bucket_name}"
     fi
 
@@ -1010,7 +1010,7 @@ function test_aws_s3_sync() {
         out="${bucket_name}"
     fi
 
-    # remove files recusively
+    # remove files recursively
     if [ $rv -eq 0 ]; then
         function="${AWS} s3 rm --recursive s3://${bucket_name}/"
         out=$($function 2>&1)
