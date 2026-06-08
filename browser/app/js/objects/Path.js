@@ -65,10 +65,10 @@ export const Path = () => {
     e.preventDefault()
     let newPath = path
     if (!newPath.endsWith("/")) newPath += "/"
-    const splittedPath = newPath.split("/")
-    if (splittedPath.length > 0 && splittedPath[0]) {
-      const bucketName = splittedPath[0]
-      const prefix = splittedPath.slice(1).join("/")
+    const splitPath = newPath.split("/")
+    if (splitPath.length > 0 && splitPath[0]) {
+      const bucketName = splitPath[0]
+      const prefix = splitPath.slice(1).join("/")
       if (!bucketExists(bucketName)) {
         await dispatch(actionsBuckets.makeBucket(bucketName))
       }
